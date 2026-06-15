@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogistiKita — Customer Portal</title>
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Base + Theme CSS -->
+    <link rel="stylesheet" href="css/dashboard-common.css">
+</head>
+<body class="role-customer">
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <img src="images/logo.png" alt="LogistiKita" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2331/2331719.png'">
+                <span>LogistiKita</span>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="sidebar-item active" id="menu-home">
+                    <a href="javascript:void(0)" onclick="switchTab('home')">
+                        <i class="fas fa-home"></i>
+                        <span>Portal Customer</span>
+                    </a>
+                </li>
+                <li class="sidebar-item" id="menu-booking">
+                    <a href="javascript:void(0)" onclick="switchTab('booking')">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Kirim Paket Baru</span>
+                    </a>
+                </li>
+                <li class="sidebar-item" id="menu-history">
+                    <a href="javascript:void(0)" onclick="switchTab('history')">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <span>Riwayat Kiriman</span>
+                    </a>
+                </li>
+                <li class="sidebar-item" id="menu-tracking">
+                    <a href="javascript:void(0)" onclick="switchTab('tracking')">
+                        <i class="fas fa-magnifying-glass-location"></i>
+                        <span>Lacak Resi AWB</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile-widget">
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle" style="font-size: 1.2rem; color: var(--accent);"></i>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name" id="customer-name-display">Customer</div>
+                        <div class="user-role">Customer Member</div>
+                    </div>
+                </div>
+                <button class="btn-logout" onclick="handleLogout()">
+                    <i class="fas fa-right-from-bracket"></i>
+                    <span>Keluar Portal</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="page-title">
+                    <button class="mobile-nav-toggle" onclick="toggleMobileSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 id="page-title-text">Portal Customer</h1>
+                    <p id="page-subtitle-text">Buat pengiriman baru, lacak status resi, dan riwayat kiriman Anda</p>
+                </div>
+                <div class="header-actions">
+                    <div class="branch-badge">
+                        <i class="fas fa-user-tag"></i>
+                        <span>Loyalty Member</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Stats Cards Grid -->
+            <div class="stats-grid">
+                <div class="glass-card stat-card" style="--accent: #3b82f6;">
+                    <div class="stat-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">Total Kiriman</span>
+                        <span class="stat-value" id="stat-total-shipments">0</span>
+                    </div>
+                </div>
+                <div class="glass-card stat-card" style="--accent: #f59e0b;">
+                    <div class="stat-icon">
+                        <i class="fas fa-truck-fast"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">Sedang Dikirim</span>
+                        <span class="stat-value" id="stat-active-shipments">0</span>
+                    </div>
+                </div>
+                <div class="glass-card stat-card" style="--accent: #10b981;">
+                    <div class="stat-icon">
+                        <i class="fas fa-circle-check"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">Paket Diterima</span>
+                        <span class="stat-value" id="stat-delivered-shipments">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 TAB 1: PORTAL HOME (HOME)
+                 ========================================== -->
+            <div id="tab-content-home" class="tab-pane">
+                <div class="sections-grid equal">
+                    <!-- Left Option Card -->
+                    <div class="glass-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 3rem;">
+                        <i class="fas fa-paper-plane" style="font-size: 3rem; color: var(--accent); margin-bottom: 1.5rem; filter: drop-shadow(0 0 15px var(--accent-glow));"></i>
+                        <h2 style="font-family: var(--font-heading); color: #fff; margin-bottom: 0.5rem;">Butuh Kirim Paket Hari Ini?</h2>
+                        <p style="color: var(--text-secondary); max-width: 320px; margin-bottom: 1.5rem;">Gunakan portal LogistiKita untuk mendaftarkan paket secara instan dan dapatkan harga terbaik.</p>
+                        <button class="btn-primary" onclick="switchTab('booking')">
+                            <i class="fas fa-plus"></i> Kirim Paket Baru
+                        </button>
+                    </div>
+
+                    <!-- Right Quick Tracking Info -->
+                    <div class="glass-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-magnifying-glass-location"></i> Quick Tracking</h2>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">Lacak paket Anda langsung dengan memasukkan nomor resi (AWB) di bawah:</p>
+                        <div class="form-group" style="display: flex; gap: 0.5rem; margin-bottom: 0;">
+                            <input type="text" id="quick-track-awb" class="form-control" style="font-family: monospace; text-transform: uppercase;" placeholder="Masukkan Nomor AWB (Contoh: LSK...)">
+                            <button class="btn-primary" style="padding: 0 1.5rem;" onclick="handleQuickTrack()">Lacak</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 TAB 2: BOOKING FORM (BOOKING)
+                 ========================================== -->
+            <div id="tab-content-booking" class="tab-pane" style="display: none;">
+                <div class="sections-grid">
+                    <!-- Main Form Card -->
+                    <div class="glass-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-circle-plus"></i> Mendaftarkan Pengiriman Baru</h2>
+                        </div>
+                        <form id="booking-form" onsubmit="handleBookingSubmit(event)">
+                            <div class="sections-grid equal" style="margin-bottom: 0; gap: 1.5rem;">
+                                <!-- Sender details -->
+                                <div>
+                                    <h3 style="color: #fff; font-size: 0.95rem; margin-bottom: 1rem;"><i class="fas fa-arrow-up-from-bracket"></i> Data Pengirim</h3>
+                                    <div class="form-group">
+                                        <label>Nama Pengirim</label>
+                                        <input type="text" id="book-sender-name" class="form-control" placeholder="Contoh: Rina Kartika" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nomor Telepon</label>
+                                        <input type="text" id="book-sender-phone" class="form-control" placeholder="0812-xxxx-xxxx" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Kota Asal Drop-off</label>
+                                        <select id="book-sender-city" class="form-control" onchange="calculateLiveCost()">
+                                            <option value="Jakarta">DKI Jakarta</option>
+                                            <option value="Bandung">Bandung</option>
+                                            <option value="Surabaya">Surabaya</option>
+                                            <option value="Medan">Medan</option>
+                                            <option value="Yogyakarta">Yogyakarta</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Alamat Lengkap Pengirim</label>
+                                        <textarea id="book-sender-address" class="form-control" rows="3" placeholder="Jalan Raya No. 12, RT 01/02..." required></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Receiver details -->
+                                <div>
+                                    <h3 style="color: #fff; font-size: 0.95rem; margin-bottom: 1rem;"><i class="fas fa-arrow-down-to-bracket"></i> Data Penerima</h3>
+                                    <div class="form-group">
+                                        <label>Nama Penerima</label>
+                                        <input type="text" id="book-receiver-name" class="form-control" placeholder="Contoh: Budi Cahyono" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Nomor Telepon</label>
+                                        <input type="text" id="book-receiver-phone" class="form-control" placeholder="0813-xxxx-xxxx" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Kota Tujuan Pengiriman</label>
+                                        <select id="book-receiver-city" class="form-control" onchange="calculateLiveCost()">
+                                            <option value="Bandung">Bandung</option>
+                                            <option value="Jakarta">DKI Jakarta</option>
+                                            <option value="Surabaya">Surabaya</option>
+                                            <option value="Medan">Medan</option>
+                                            <option value="Yogyakarta">Yogyakarta</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Alamat Lengkap Penerima</label>
+                                        <textarea id="book-receiver-address" class="form-control" rows="3" placeholder="Jalan Mawar No. 45, Kecamatan Sukajadi..." required></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid var(--border-card); margin: 1.5rem 0;">
+
+                            <div class="sections-grid equal" style="margin-bottom: 0; gap: 1.5rem;">
+                                <!-- Package Specifications -->
+                                <div>
+                                    <h3 style="color: #fff; font-size: 0.95rem; margin-bottom: 1rem;"><i class="fas fa-cubes"></i> Spesifikasi Paket</h3>
+                                    <div class="form-group">
+                                        <label>Berat Paket (Fixed Simulation / Kg)</label>
+                                        <input type="number" id="book-weight" class="form-control" value="1.0" min="0.1" step="0.1" onchange="calculateLiveCost()" onkeyup="calculateLiveCost()" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Jenis Layanan</label>
+                                        <select id="book-service-type" class="form-control" onchange="calculateLiveCost()">
+                                            <option value="Reguler">Reguler (Hemat & Aman)</option>
+                                            <option value="Express">Express (Kilat / Prioritas)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Cost Estimation Panel -->
+                                <div class="glass-card" style="background: rgba(255,255,255,0.02); display: flex; flex-direction: column; justify-content: space-between;">
+                                    <div>
+                                        <h3 style="color: #fff; font-size: 0.95rem; margin-bottom: 0.5rem;"><i class="fas fa-calculator"></i> Rincian Estimasi Biaya</h3>
+                                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Biaya bersifat simulasi B2C realtime</p>
+                                        
+                                        <div style="font-size: 0.9rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                                            <div style="display: flex; justify-content: space-between;">
+                                                <span>Ongkos Kirim:</span>
+                                                <strong id="cost-ongkir">Rp 15.000</strong>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between;">
+                                                <span>Fee Layanan (Customer):</span>
+                                                <strong id="cost-fee">Rp 2.000</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="border-top: 1px solid var(--border-card); padding-top: 1rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-weight: 700; color: #fff;">Total Tagihan:</span>
+                                        <strong style="font-size: 1.5rem; color: var(--accent);" id="cost-total">Rp 17.000</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-primary" style="width: 100%; margin-top: 2rem;">
+                                <i class="fas fa-credit-card"></i>
+                                <span>Konfirmasi & Buat Resi</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 TAB 3: RIWAYAT KIRIMAN (HISTORY)
+                 ========================================== -->
+            <div id="tab-content-history" class="tab-pane" style="display: none;">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-clock-rotate-left"></i> Riwayat Pengiriman Paket Anda</h2>
+                        <button class="btn-secondary" onclick="loadCustomerShipments()">
+                            <i class="fas fa-rotate"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>AWB Resi</th>
+                                    <th>Tanggal Pembuatan</th>
+                                    <th>Nama Penerima</th>
+                                    <th>Kota Tujuan</th>
+                                    <th>Berat / Layanan</th>
+                                    <th>Biaya</th>
+                                    <th>Status Paket</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted);">Memuat riwayat pengiriman...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 TAB 4: LACAK PAKET (TRACKING)
+                 ========================================== -->
+            <div id="tab-content-tracking" class="tab-pane" style="display: none;">
+                <div class="sections-grid">
+                    <!-- Tracking details timeline -->
+                    <div class="glass-card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-map-location-dot"></i> Lacak Status Resi Pengiriman</h2>
+                        </div>
+                        <div class="form-group" style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+                            <input type="text" id="track-awb-input" class="form-control" style="font-family: monospace; text-transform: uppercase;" placeholder="Masukkan Nomor AWB (Contoh: LSK...)">
+                            <button class="btn-primary" style="padding: 0 2rem;" onclick="trackAwb(document.getElementById('track-awb-input').value)">Lacak</button>
+                        </div>
+
+                        <!-- Result panel -->
+                        <div id="tracking-result-panel" style="display: none;">
+                            <div style="border-bottom: 1px solid var(--border-card); padding-bottom: 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                                <div>
+                                    <div style="font-size: 1.25rem; font-weight: 800; color: #fff;" id="track-disp-awb">AWB: LSK123456</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-secondary);" id="track-disp-desc">Estimasi Tiba: 1-2 Hari</div>
+                                </div>
+                                <span class="status-badge pending" id="track-disp-status">Pending</span>
+                            </div>
+
+                            <div class="sections-grid equal" style="margin-bottom: 2rem;">
+                                <div>
+                                    <h4 style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem;">Informasi Pengirim</h4>
+                                    <div style="font-weight: 700; color: #fff;" id="track-disp-sender">Rina Kartika</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);" id="track-disp-sender-city">DKI Jakarta</div>
+                                </div>
+                                <div>
+                                    <h4 style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem;">Informasi Penerima</h4>
+                                    <div style="font-weight: 700; color: #fff;" id="track-disp-receiver">Budi Cahyono</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary);" id="track-disp-receiver-addr">Bandung (Jalan Mawar No. 45)</div>
+                                </div>
+                            </div>
+
+                            <h3 style="color: #fff; font-size: 1.05rem; margin-bottom: 1.5rem;"><i class="fas fa-timeline"></i> Riwayat Perjalanan Paket</h3>
+                            <ul class="activity-feed" id="tracking-timeline-feed">
+                                <!-- Loaded dynamically -->
+                            </ul>
+                        </div>
+
+                        <div id="tracking-empty-panel" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                            <i class="fas fa-magnifying-glass-location" style="font-size: 2.5rem; margin-bottom: 0.75rem;"></i>
+                            <p>Silakan masukkan nomor resi AWB di atas untuk melihat detail tracking.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast-notification"></div>
+
+    <script src="js/customer-dashboard.js"></script>
+</body>
+</html>
