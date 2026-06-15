@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogistiKita - Layanan Manajemen Logistik</title>
+    <!-- Modern Typography & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Brand Logo -->
+            <div class="login-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-truck-fast"></i>
+                </div>
+                <h1>LogistiKita</h1>
+                <p>Sistem Operasional Cabang Logistik Realtime</p>
+            </div>
+
+            <!-- Login / Register Tabs -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Masuk Akun</button>
+                <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Daftar Customer</button>
+            </div>
+
+            <!-- Alert Box for Info/Error -->
+            <div id="alert-box" class="alert-box"></div>
+
+            <!-- Form: Login -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="login-email">Alamat Email</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="login-email" class="login-input" placeholder="nama@email.com" required>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="login-password">Kata Sandi</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="login-password" class="login-input" placeholder="••••••••" required>
+                        <i class="fas fa-lock"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="btn-submit-login">
+                    <i class="fas fa-right-to-bracket"></i>
+                    <span>Masuk ke Dashboard</span>
+                </button>
+            </form>
+
+            <!-- Form: Register (Customer only) -->
+            <form id="register-form" class="register-form-section" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label class="form-label" for="reg-nama">Nama Lengkap</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="reg-nama" class="login-input" placeholder="Nama Lengkap Anda" required>
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="reg-email">Alamat Email</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="reg-email" class="login-input" placeholder="nama@email.com" required>
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="reg-phone">Nomor Telepon</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="reg-phone" class="login-input" placeholder="0812-xxxx-xxxx" required>
+                        <i class="fas fa-phone"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="reg-password">Kata Sandi</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="reg-password" class="login-input" placeholder="Minimal 6 karakter" required minlength="6">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="btn-submit-register">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Daftar Akun Baru</span>
+                </button>
+            </form>
+
+            <!-- Quick Login for Demo/Development -->
+            <div class="dev-accordion">
+                <div class="dev-accordion-title" onclick="toggleDevAccordion()">
+                    <span><i class="fas fa-code"></i> Quick Demo Login</span>
+                    <i class="fas fa-chevron-down" id="dev-chevron"></i>
+                </div>
+                <div class="dev-grid" id="dev-accordion-grid">
+                    <button class="btn-dev-role" onclick="quickLogin('superadmin')">
+                        <i class="fas fa-crown" style="color: #8b5cf6;"></i>
+                        <span>Super Admin</span>
+                    </button>
+                    <button class="btn-dev-role" onclick="quickLogin('branch')">
+                        <i class="fas fa-building" style="color: #f97316;"></i>
+                        <span>Admin Cabang</span>
+                    </button>
+                    <button class="btn-dev-role" onclick="quickLogin('dispatcher')">
+                        <i class="fas fa-route" style="color: #06b6d4;"></i>
+                        <span>Dispatcher</span>
+                    </button>
+                    <button class="btn-dev-role" onclick="quickLogin('kurir')">
+                        <i class="fas fa-truck-ramp-box" style="color: #10b981;"></i>
+                        <span>Kurir</span>
+                    </button>
+                    <button class="btn-dev-role" onclick="quickLogin('customer')">
+                        <i class="fas fa-user-tag" style="color: #3b82f6;"></i>
+                        <span>Customer</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Login JS -->
+    <script src="js/login.js"></script>
+</body>
+</html>

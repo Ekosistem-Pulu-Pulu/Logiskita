@@ -1,0 +1,1 @@
+require('./db').query("ALTER TABLE shipments MODIFY COLUMN status ENUM('Pending','Picked Up','In Transit','Out For Delivery','Waiting Branch Confirmation','Arrived at Branch','Arrived at Destination Branch','Delivered','Failed','Cancelled') DEFAULT 'Pending'").then(()=>process.exit(0)).catch(console.error);
