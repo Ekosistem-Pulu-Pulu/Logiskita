@@ -19,16 +19,121 @@ router.use('/marketplace', verifyApiKey, apiLogMiddleware, rateLimiter, marketpl
 // PUBLIC ENDPOINTS (tanpa API Key — untuk Customer)
 // =====================================================
 
-// Cek Ongkir (berbasis koordinat + jarak Haversine)
+/**
+ * @swagger
+ * /api/v1/rates/check:
+ *   post:
+ *     summary: Cek Ongkos Kirim (Publik)
+ *     description: Mengecek ongkos kirim berdasarkan koordinat atau alamat tanpa memerlukan API Key.
+ *     tags: [Rates]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               origin:
+ *                 type: string
+ *                 example: "Jakarta"
+ *               destination:
+ *                 type: string
+ *                 example: "Bandung"
+ *               weight:
+ *                 type: number
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: Berhasil mendapatkan harga ongkir
+ *       400:
+ *         description: Bad Request
+ */
 router.post('/rates/check', rateController.checkRates);
 
-// Buat Shipment (Customer langsung)
+/**
+ * @swagger
+ * /api/v1/customer/shipments:
+ *   post:
+ *     summary: Buat Pengiriman Baru (Customer)
+ *     description: Membuat resi (AWB) baru. Tidak memerlukan API Key.
+ *     tags: [Shipments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sender_name:
+ *                 type: string
+ *                 example: "Budi"
+ *               sender_address:
+ *                 type: string
+ *                 example: "Jl. Sudirman No 1, Jakarta"
+ *               sender_lat:
+ *                 type: number
+ *                 example: -6.200000
+ *               sender_lng:
+ *                 type: number
+ *                 example: 106.816666
+ *               sender_city:
+ *                 type: string
+ *                 example: "Jakarta"
+ *               receiver_name:
+ *                 type: string
+ *                 example: "Agus"
+ *               receiver_address:
+ *                 type: string
+ *                 example: "Jl. Asia Afrika No 2, Bandung"
+ *               receiver_lat:
+ *                 type: number
+ *                 example: -6.917464
+ *               receiver_lng:
+ *                 type: number
+ *                 example: 107.619123
+ *               receiver_city:
+ *                 type: string
+ *                 example: "Bandung"
+ *               weight:
+ *                 type: number
+ *                 example: 1
+ *               rate_id:
+ *                 type: integer
+ *                 example: 1
+ *               payment_method:
+ *                 type: string
+ *                 example: "bank_transfer"
+ *     responses:
+ *       201:
+ *         description: Berhasil membuat pengiriman (resi AWB)
+ *       400:
+ *         description: Data tidak lengkap
+ */
 router.post('/customer/shipments', customerController.createShipment);
 
 // Simulasi Pembayaran
 router.post('/payments/pay', customerController.processPayment);
 
-// Tracking Publik (tanpa login)
+/**
+ * @swagger
+ * /api/v1/tracking/{resi}:
+ *   get:
+ *     summary: Lacak Pengiriman (Publik)
+ *     description: Mendapatkan status dan riwayat pengiriman berdasarkan nomor resi (AWB). Tidak memerlukan API Key.
+ *     tags: [Tracking]
+ *     parameters:
+ *       - in: path
+ *         name: resi
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nomor resi pengiriman (contoh LSK-...)
+ *     responses:
+ *       200:
+ *         description: Berhasil menemukan data pengiriman
+ *       404:
+ *         description: Resi tidak ditemukan
+ */
 router.get('/tracking/:resi', customerController.trackShipment);
 
 // Aduan / Laporan Kendala (Customer)
@@ -70,7 +175,70 @@ router.post('/payments/gateway-initiate', integrationController.initiateGatewayP
 // Cek Ongkir (legacy — kota-based)
 router.post('/rates', verifyApiKey, shipmentController.checkRates);
 
-// Buat Pengiriman (Create Resi)
+/**
+ * @swagger
+ * /api/v1/shipments:
+ *   post:
+ *     summary: Buat Pengiriman Baru (Mitra B2B)
+ *     description: Endpoint khusus untuk Mitra Bisnis (Marketplace). **Wajib menggunakan API Key**.
+ *     tags: [Shipments B2B]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               external_order_id:
+ *                 type: string
+ *                 example: "ORD-12345"
+ *               sender_name:
+ *                 type: string
+ *                 example: "Toko Serba Ada"
+ *               sender_address:
+ *                 type: string
+ *                 example: "Jl. Sudirman No 1, Jakarta"
+ *               sender_lat:
+ *                 type: number
+ *                 example: -6.200000
+ *               sender_lng:
+ *                 type: number
+ *                 example: 106.816666
+ *               sender_city:
+ *                 type: string
+ *                 example: "Jakarta Pusat"
+ *               receiver_name:
+ *                 type: string
+ *                 example: "Pembeli A"
+ *               receiver_address:
+ *                 type: string
+ *                 example: "Jl. Asia Afrika No 2, Bandung"
+ *               receiver_lat:
+ *                 type: number
+ *                 example: -6.917464
+ *               receiver_lng:
+ *                 type: number
+ *                 example: 107.619123
+ *               receiver_city:
+ *                 type: string
+ *                 example: "Bandung"
+ *               weight:
+ *                 type: number
+ *                 example: 1
+ *               rate_id:
+ *                 type: integer
+ *                 example: 1
+ *               payment_method:
+ *                 type: string
+ *                 example: "api_gateway"
+ *     responses:
+ *       201:
+ *         description: Berhasil membuat pengiriman (resi AWB)
+ *       401:
+ *         description: API Key tidak valid / tidak disertakan
+ */
 router.post('/shipments', verifyApiKey, shipmentController.createShipment);
 
 // Ambil Riwayat Pengiriman
