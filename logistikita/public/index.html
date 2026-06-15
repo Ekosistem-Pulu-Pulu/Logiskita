@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogistiKita - Solusi Pengiriman Cepat & Aman</title>
+    <meta name="description" content="LogistiKita adalah platform pengiriman barang terpercaya untuk bisnis dan personal. Kelola pengiriman dengan cepat, aman, dan tanpa ribet.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-brand">
+                <div class="nav-logo-icon">
+                    <i class="fas fa-truck-fast"></i>
+                </div>
+                <span>LogistiKita</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="#hero" class="nav-link active">Beranda</a>
+                <a href="#features" class="nav-link">Fitur</a>
+                <a href="#how-it-works" class="nav-link">Cara Kerja</a>
+                <a href="#pricing" class="nav-link">Harga</a>
+                <a href="#testimonials" class="nav-link">Testimoni</a>
+            </div>
+            <div class="nav-actions" style="display: flex; gap: 1rem; align-items: center; color: var(--text-secondary); font-size: 0.85rem; font-weight: 500;">
+                <a href="kirim.html" class="nav-btn nav-btn-primary">
+                    <i class="fas fa-paper-plane"></i> Kirim Paket
+                </a>
+            </div>
+            <button class="nav-toggle" id="nav-toggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-bolt"></i>
+                    <span>Platform Logistik #1 untuk UMKM Indonesia</span>
+                </div>
+                <h1 class="hero-title">
+                    Pengiriman <span class="gradient-text">Cepat</span>,
+                    <br>Aman &amp; <span class="gradient-text">Terpercaya</span>
+                </h1>
+                <p class="hero-subtitle">
+                    LogistiKita membantu Anda mengelola pengiriman barang dengan sistem terintegrasi SmartBank. 
+                    Hitung ongkir, tracking real-time, dan pembayaran otomatis dalam satu platform.
+                </p>
+                <div class="hero-cta">
+                    <a href="kirim.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Mulai Pengiriman</span>
+                        <div class="btn-shine"></div>
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline btn-lg">
+                        <i class="fas fa-play-circle"></i>
+                        <span>Lihat Cara Kerja</span>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <strong>10K+</strong>
+                        <span>Pengiriman</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <strong>99.9%</strong>
+                        <span>Uptime</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <strong>24 Jam</strong>
+                        <span>Estimasi Tiba</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-card-stack">
+                    <div class="hero-card hero-card-back">
+                        <div class="hc-row">
+                            <span class="hc-dot green"></span>
+                            <span class="hc-label">Pengiriman Aktif</span>
+                        </div>
+                        <div class="hc-value">247 Paket</div>
+                    </div>
+                    <div class="hero-card hero-card-main">
+                        <div class="hc-icon"><i class="fas fa-box-open"></i></div>
+                        <div class="hc-info">
+                            <span class="hc-title">Order #ORD-8291</span>
+                            <span class="hc-desc">Jakarta → Surabaya</span>
+                        </div>
+                        <div class="hc-status-bar">
+                            <div class="hc-progress" style="width:72%"></div>
+                        </div>
+                        <div class="hc-bottom">
+                            <span class="hc-badge success"><i class="fas fa-truck"></i> Dalam Perjalanan</span>
+                            <span class="hc-time">ETA: 6 jam</span>
+                        </div>
+                    </div>
+                    <div class="hero-card hero-card-float">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Pembayaran SmartBank ✓</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Tools Section: Cek Ongkir & Pelacakan Cepat -->
+    <section class="quick-tools-section" id="quick-tools">
+        <div class="section-container">
+            <div class="quick-tools-grid">
+                <!-- Widget Cek Ongkir -->
+                <div class="quick-tool-card" id="cek-ongkir-widget">
+                    <div class="qt-header">
+                        <div class="qt-icon blue"><i class="fas fa-calculator"></i></div>
+                        <h3>Cek Ongkir</h3>
+                        <p>Estimasi biaya pengiriman sebelum memesan</p>
+                    </div>
+                    <form id="form-cek-ongkir" class="qt-form">
+                        <div class="qt-form-row">
+                            <div class="qt-input-group">
+                                <label for="ongkir-asal">Kota Asal</label>
+                                <select id="ongkir-asal" required>
+                                    <option value="">Pilih Kota Asal</option>
+                                    <option value="Jakarta">Jakarta</option>
+                                    <option value="Bandung">Bandung</option>
+                                    <option value="Surabaya">Surabaya</option>
+                                    <option value="Semarang">Semarang</option>
+                                </select>
+                            </div>
+                            <div class="qt-input-group">
+                                <label for="ongkir-tujuan">Kota Tujuan</label>
+                                <select id="ongkir-tujuan" required>
+                                    <option value="">Pilih Kota Tujuan</option>
+                                    <option value="Bandung">Bandung</option>
+                                    <option value="Surabaya">Surabaya</option>
+                                    <option value="Yogyakarta">Yogyakarta</option>
+                                    <option value="Semarang">Semarang</option>
+                                    <option value="Bali">Bali</option>
+                                    <option value="Medan">Medan</option>
+                                </select>
+                            </div>
+                            <div class="qt-input-group">
+                                <label for="ongkir-berat">Berat (kg)</label>
+                                <input type="number" id="ongkir-berat" placeholder="1" min="0.1" step="0.1" value="1" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="qt-btn blue"><i class="fas fa-search"></i> Cek Harga</button>
+                    </form>
+                    <!-- Map Container (Hidden by default) -->
+                    <div id="ongkir-map-container" style="display:none; width: 100%; height: 200px; border-radius: 8px; margin-top: 1rem; border: 1px solid var(--border-color);"></div>
+                    <div id="ongkir-result" class="qt-result" style="display:none;"></div>
+                </div>
+
+                <!-- Pelacakan Cepat -->
+                <div class="quick-tool-card" id="tracking-widget">
+                    <div class="qt-header">
+                        <div class="qt-icon green"><i class="fas fa-location-dot"></i></div>
+                        <h3>Pelacakan Cepat</h3>
+                        <p>Lacak status paket dengan nomor resi</p>
+                    </div>
+                    <form id="form-quick-track" class="qt-form">
+                        <div class="qt-input-group full">
+                            <label for="quick-resi">Nomor Resi (AWB)</label>
+                            <input type="text" id="quick-resi" placeholder="Contoh: LSK20260501001" required>
+                        </div>
+                        <button type="submit" class="qt-btn green"><i class="fas fa-magnifying-glass"></i> Lacak Paket</button>
+                    </form>
+                    <div id="tracking-quick-result" class="qt-result" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trusted By -->
+    <section class="trusted-section">
+        <div class="trusted-container">
+            <p class="trusted-label">Terintegrasi dengan ekosistem</p>
+            <div class="trusted-logos">
+                <div class="trusted-item"><i class="fas fa-university"></i> SmartBank</div>
+                <div class="trusted-item"><i class="fas fa-store"></i> PasarKita</div>
+                <div class="trusted-item"><i class="fas fa-cash-register"></i> WarungPOS</div>
+                <div class="trusted-item"><i class="fas fa-boxes-stacked"></i> SupplierHub</div>
+                <div class="trusted-item"><i class="fas fa-chart-line"></i> UMKM Insight</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge"><i class="fas fa-sparkles"></i> Fitur Unggulan</span>
+                <h2 class="section-title">Semua yang Anda butuhkan<br>dalam <span class="gradient-text">satu platform</span></h2>
+                <p class="section-desc">Kelola pengiriman dari awal hingga akhir dengan fitur-fitur canggih.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card-new">
+                    <div class="fc-icon blue"><i class="fas fa-paper-plane"></i></div>
+                    <h3>Request Pengiriman</h3>
+                    <p>Buat permintaan pengiriman dengan cepat. Masukkan alamat tujuan dan jarak, sistem kami yang menghitung semuanya.</p>
+                </div>
+                <div class="feature-card-new">
+                    <div class="fc-icon green"><i class="fas fa-location-dot"></i></div>
+                    <h3>Tracking Real-Time</h3>
+                    <p>Pantau status pengiriman kapan saja. Dari pending hingga tiba di tujuan, semua terupdate secara real-time.</p>
+                </div>
+                <div class="feature-card-new">
+                    <div class="fc-icon purple"><i class="fas fa-calculator"></i></div>
+                    <h3>Kalkulasi Ongkir Map</h3>
+                    <p>Pilih lokasi di peta interaktif, ongkir dihitung otomatis berdasarkan jarak koordinat. Transparan dan real-time.</p>
+                </div>
+                <div class="feature-card-new">
+                    <div class="fc-icon orange"><i class="fas fa-credit-card"></i></div>
+                    <h3>Pembayaran SmartBank</h3>
+                    <p>Integrasi langsung dengan SmartBank untuk proses pembayaran yang aman dan otomatis.</p>
+                </div>
+                <div class="feature-card-new">
+                    <div class="fc-icon cyan"><i class="fas fa-percent"></i></div>
+                    <h3>Biaya Admin 3%</h3>
+                    <p>Fee admin platform hanya 3% dari ongkir. Ditampilkan jelas sebelum transaksi. Tanpa biaya tersembunyi.</p>
+                </div>
+                <div class="feature-card-new">
+                    <div class="fc-icon red"><i class="fas fa-shield-halved"></i></div>
+                    <h3>Admin Panel Lengkap</h3>
+                    <p>Panel admin dengan autentikasi JWT untuk mengelola seluruh order dan memantau performa sistem.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-section" id="how-it-works">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge"><i class="fas fa-route"></i> Cara Kerja</span>
+                <h2 class="section-title">Alur kerja yang <span class="gradient-text">sederhana</span></h2>
+                <p class="section-desc">Kirim paket Anda hanya dalam 4 langkah mudah</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">01</div>
+                    <div class="step-icon"><i class="fas fa-file-pen"></i></div>
+                    <h3>Buat Request</h3>
+                    <p>Isi formulir pengiriman dengan User ID, alamat tujuan, dan jarak pengiriman.</p>
+                </div>
+                <div class="step-connector"><i class="fas fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-number">02</div>
+                    <div class="step-icon"><i class="fas fa-calculator"></i></div>
+                    <h3>Hitung Ongkir</h3>
+                    <p>Sistem menghitung biaya pengiriman otomatis: Rp 5.000/km + fee layanan 3%.</p>
+                </div>
+                <div class="step-connector"><i class="fas fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-number">03</div>
+                    <div class="step-icon"><i class="fas fa-money-bill-wave"></i></div>
+                    <h3>Bayar via SmartBank</h3>
+                    <p>Lakukan pembayaran aman melalui integrasi SmartBank. Transaksi tercatat di ledger.</p>
+                </div>
+                <div class="step-connector"><i class="fas fa-arrow-right"></i></div>
+                <div class="step-card">
+                    <div class="step-number">04</div>
+                    <div class="step-icon"><i class="fas fa-truck-fast"></i></div>
+                    <h3>Tracking Pengiriman</h3>
+                    <p>Pantau paket dari Pending → Proses → Dalam Perjalanan → Tiba → Selesai.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge"><i class="fas fa-tags"></i> Biaya</span>
+                <h2 class="section-title">Tarif yang <span class="gradient-text">transparan</span></h2>
+                <p class="section-desc">Tidak ada biaya tersembunyi. Anda hanya bayar sesuai pengiriman.</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="price-header">
+                        <h3>Ongkir Dasar</h3>
+                        <div class="price-amount"><span class="currency">Rp</span>5.000<span class="per">/km</span></div>
+                    </div>
+                    <ul class="price-features">
+                        <li><i class="fas fa-check"></i> Dihitung otomatis berdasarkan jarak</li>
+                        <li><i class="fas fa-check"></i> Estimasi real-time sebelum checkout</li>
+                        <li><i class="fas fa-check"></i> Flat rate tanpa surcharge</li>
+                    </ul>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="price-badge">Populer</div>
+                    <div class="price-header">
+                        <h3>Biaya Admin Platform</h3>
+                        <div class="price-amount"><span class="currency"></span>3<span class="per">% / transaksi</span></div>
+                    </div>
+                    <ul class="price-features">
+                        <li><i class="fas fa-check"></i> Fee admin LogistiKita</li>
+                        <li><i class="fas fa-check"></i> Termasuk asuransi pengiriman</li>
+                        <li><i class="fas fa-check"></i> Tracking real-time</li>
+                        <li><i class="fas fa-check"></i> Customer support 24/7</li>
+                    </ul>
+                </div>
+                <div class="pricing-card">
+                    <div class="price-header">
+                        <h3>Fee SmartBank</h3>
+                        <div class="price-amount"><span class="currency"></span>1<span class="per">% / transaksi</span></div>
+                    </div>
+                    <ul class="price-features">
+                        <li><i class="fas fa-check"></i> Biaya proses pembayaran</li>
+                        <li><i class="fas fa-check"></i> Tercatat di ledger SmartBank</li>
+                        <li><i class="fas fa-check"></i> Keamanan transaksi terjamin</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials-section" id="testimonials">
+        <div class="section-container">
+            <div class="section-header">
+                <span class="section-badge"><i class="fas fa-star"></i> Testimoni</span>
+                <h2 class="section-title">Dipercaya oleh <span class="gradient-text">ribuan pengguna</span></h2>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card-new">
+                    <div class="tc-stars">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p>"LogistiKita membuat pengiriman usaha jadi lebih mudah dan cepat. Integrasi SmartBank-nya sangat membantu!"</p>
+                    <div class="tc-author">
+                        <div class="tc-avatar"><i class="fas fa-user"></i></div>
+                        <div>
+                            <strong>Dwi Santoso</strong>
+                            <span>Owner Toko Online</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card-new">
+                    <div class="tc-stars">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p>"Fitur admin dan trackingnya sangat lengkap. Sekarang semua order bisa dipantau satu tempat. Recommended!"</p>
+                    <div class="tc-author">
+                        <div class="tc-avatar"><i class="fas fa-user"></i></div>
+                        <div>
+                            <strong>Rina Maharani</strong>
+                            <span>Manager Logistik</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card-new">
+                    <div class="tc-stars">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                    </div>
+                    <p>"Ongkirnya transparan, fee-nya jelas. Gak kayak jasa kirim lain yang banyak biaya tersembunyi. Top!"</p>
+                    <div class="tc-author">
+                        <div class="tc-avatar"><i class="fas fa-user"></i></div>
+                        <div>
+                            <strong>Ahmad Fauzan</strong>
+                            <span>Pemilik UMKM</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="section-container">
+            <div class="cta-card">
+                <h2>Siap untuk mengirim paket?</h2>
+                <p>Mulai sekarang dan rasakan kemudahan pengiriman bersama LogistiKita.</p>
+                <div class="cta-actions">
+                    <a href="kirim.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i> Mulai Sekarang
+                        <div class="btn-shine"></div>
+                    </a>
+                    <a href="admin-login.html" class="btn btn-outline btn-lg">
+                        <i class="fas fa-user-shield"></i> Panel Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <i class="fas fa-truck-fast"></i>
+                        <span>LogistiKita</span>
+                    </div>
+                    <p>Platform pengiriman barang terpercaya untuk bisnis dan personal. Terintegrasi dengan ekosistem ekonomi UMKM.</p>
+                </div>
+                <div class="footer-links-group">
+                    <h4>Navigasi</h4>
+                    <a href="#hero">Beranda</a>
+                    <a href="#features">Fitur</a>
+                    <a href="#how-it-works">Cara Kerja</a>
+                    <a href="#pricing">Harga</a>
+                </div>
+                <div class="footer-links-group">
+                    <h4>Layanan</h4>
+                    <a href="request.html">Request Pengiriman</a>
+                    <a href="dashboard.html">Dashboard User</a>
+                    <a href="admin-login.html">Admin Panel</a>
+                </div>
+                <div class="footer-links-group">
+                    <h4>Ekosistem</h4>
+                    <a href="#">SmartBank</a>
+                    <a href="#">PasarKita</a>
+                    <a href="#">WarungPOS</a>
+                    <a href="#">SupplierHub</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 LogistiKita. Semua hak dilindungi. | Tugas Besar RPL 2</p>
+                <p>Dosen: M. Yusril Helmi Setyawan, S.Kom., M.Kom.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Customer Guide Floating Widget (Kanan Bawah) -->
+    <div class="guide-widget" id="guide-widget">
+        <button class="guide-toggle" id="guide-toggle" aria-label="Panduan Penggunaan">
+            <i class="fas fa-question-circle" id="guide-icon"></i>
+        </button>
+        <div class="guide-panel" id="guide-panel">
+            <div class="guide-header">
+                <h3><i class="fas fa-book-open"></i> Panduan & Alur Kerja</h3>
+                <button class="guide-close" id="guide-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="guide-body">
+                <div class="guide-section-title"><i class="fas fa-id-card"></i> Panduan Identitas (User ID)</div>
+                <div class="guide-step active" data-step="1">
+                    <div class="gs-number"><i class="fas fa-info-circle"></i></div>
+                    <div class="gs-content">
+                        <h4>Tidak Ada Registrasi Mandiri</h4>
+                        <p>Aplikasi ini <strong>tidak menyediakan pendaftaran akun mandiri</strong>. Setiap pengguna wajib menggunakan User ID yang diperoleh setelah registrasi di aplikasi <strong>SmartBank (Kelompok 1)</strong>.</p>
+                    </div>
+                </div>
+
+                <div class="guide-section-title"><i class="fas fa-route"></i> Alur Kerja Transaksi</div>
+                <div class="guide-step" data-step="2">
+                    <div class="gs-number">1</div>
+                    <div class="gs-content">
+                        <h4>Daftar & Isi Saldo di SmartBank</h4>
+                        <p>Lakukan pendaftaran dan pengisian saldo di sistem SmartBank terlebih dahulu.</p>
+                    </div>
+                </div>
+                <div class="guide-step" data-step="3">
+                    <div class="gs-number">2</div>
+                    <div class="gs-content">
+                        <h4>Pesan via Platform Terhubung</h4>
+                        <p>Pesan layanan LogistiKita melalui platform terhubung seperti Marketplace atau langsung di website ini.</p>
+                    </div>
+                </div>
+                <div class="guide-step" data-step="4">
+                    <div class="gs-number">3</div>
+                    <div class="gs-content">
+                        <h4>Pembayaran Otomatis via Integrator</h4>
+                        <p>Setiap transaksi pembayaran diproses <strong>secara otomatis melalui Integrator</strong> (API Gateway) untuk memotong saldo SmartBank Anda.</p>
+                    </div>
+                </div>
+                <div class="guide-step" data-step="5">
+                    <div class="gs-number">4</div>
+                    <div class="gs-content">
+                        <h4>Lacak Paket Anda</h4>
+                        <p>Gunakan <strong>User ID yang sama</strong> untuk melacak status paket melalui fitur Tracking di halaman ini atau di dashboard.</p>
+                    </div>
+                </div>
+
+                <div class="guide-footer">
+                    <div class="guide-tip">
+                        <i class="fas fa-shield-halved"></i>
+                        <span><strong>Dukungan Sistem:</strong> Integrasi pembayaran dan validasi keamanan sepenuhnya dikelola secara terpusat demi menjamin keamanan saldo Anda.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lapor Admin Floating Button -->
+    <div class="lapor-widget" id="lapor-widget" style="position: fixed; bottom: 90px; right: 24px; z-index: 9999;">
+        <button class="lapor-toggle" id="lapor-toggle" aria-label="Lapor Kendala / Admin" style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #fff; font-size: 1.4rem; cursor: pointer; box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4); transition: all 0.3s; display: grid; place-items: center;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+            <i class="fas fa-headset" id="lapor-icon"></i>
+        </button>
+    </div>
+
+    <!-- Modal Lapor Admin -->
+    <div class="modal-overlay" id="lapor-admin-modal" style="position: fixed; inset: 0; background: rgba(10, 14, 26, 0.8); backdrop-filter: blur(8px); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
+        <div class="modal-content glass-card" style="max-width: 480px; width: 90%; padding: 2rem; background: rgba(13, 25, 44, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: translateY(-30px); transition: transform 0.3s ease;">
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px;">
+                <h3 style="display: flex; align-items: center; gap: 10px; font-size: 1.25rem; font-weight: 800; color: #fff;"><i class="fas fa-headset" style="color: #10b981;"></i> Hubungi & Lapor Admin</h3>
+                <button class="btn-secondary" style="background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 1.2rem;" onclick="closeLaporModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="lapor-admin-form" onsubmit="handleLaporSubmit(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.8);">Nama Lengkap</label>
+                    <input type="text" id="lapor-nama" class="form-control" placeholder="Contoh: Rian Anggara" required style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.8);">Alamat Email</label>
+                    <input type="email" id="lapor-email" class="form-control" placeholder="rian.anggara@email.com" required style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.8);">Nomor Resi / AWB (Opsional)</label>
+                    <input type="text" id="lapor-resi" class="form-control" placeholder="Contoh: LSK123456789 (jika ada)" style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.8);">Jenis Kendala</label>
+                    <select id="lapor-tipe" class="form-control" required style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Pengiriman Lambat" style="background: #1a2a45; color: #fff;">Pengiriman Terlambat</option>
+                        <option value="Paket Rusak/Hilang" style="background: #1a2a45; color: #fff;">Paket Rusak / Hilang</option>
+                        <option value="Pembayaran Gagal" style="background: #1a2a45; color: #fff;">Pembayaran Error / Gagal</option>
+                        <option value="Bug Aplikasi" style="background: #1a2a45; color: #fff;">Kendala Website / Aplikasi</option>
+                        <option value="Lainnya" style="background: #1a2a45; color: #fff;">Lainnya</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.8);">Detail Masalah</label>
+                    <textarea id="lapor-pesan" class="form-control" rows="4" placeholder="Jelaskan detail masalah Anda secara lengkap..." required style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff; resize: none; font-family: inherit;"></textarea>
+                </div>
+                <button type="submit" class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; margin-top: 10px;">
+                    <i class="fas fa-paper-plane"></i> Kirim Laporan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/landing.js"></script>
+</body>
+</html>

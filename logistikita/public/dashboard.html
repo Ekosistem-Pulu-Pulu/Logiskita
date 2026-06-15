@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogistiKita — Dasbor UMKM</title>
+    <meta name="description" content="Panel pengguna UMKM LogistiKita. Lacak pengiriman, lihat biaya, dan kelola transaksi Anda.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/theme.js"></script>
+</head>
+<body class="page-dashboard">
+
+    <!-- Animated Background -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-layout">
+        <!-- Top Header Bar -->
+        <header class="app-header" id="app-header">
+            <div class="app-header-inner">
+                <div class="app-brand">
+                    <div class="app-brand-icon">
+                        <i class="fas fa-truck-fast"></i>
+                    </div>
+                    <div>
+                        <h1>LogistiKita</h1>
+                        <span class="app-brand-sub">User Panel — Dasbor UMKM</span>
+                    </div>
+                </div>
+                <div class="app-header-actions">
+                    <button class="app-nav-btn" id="theme-toggle" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <a href="index.html" class="app-nav-btn">
+                        <i class="fas fa-globe"></i> Beranda
+                    </a>
+                    <a href="payment-history.html" class="app-nav-btn accent" id="btn-payment-history">
+                        <i class="fas fa-receipt"></i> Riwayat Pembayaran
+                    </a>
+                    <button class="app-nav-btn logout" id="btn-logout">
+                        <i class="fas fa-right-from-bracket"></i> Keluar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+
+            <!-- UMKM Profile Section -->
+            <section class="profile-section" id="profile-section">
+                <div class="profile-card">
+                    <div class="profile-avatar">
+                        <i class="fas fa-store"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h2 id="profile-nama-usaha">—</h2>
+                        <div class="profile-details">
+                            <div class="profile-detail-item">
+                                <i class="fas fa-user-tie"></i>
+                                <span>Pemilik: <strong id="profile-pemilik">—</strong></span>
+                            </div>
+                            <div class="profile-detail-item">
+                                <i class="fas fa-briefcase"></i>
+                                <span id="profile-jenis-usaha">—</span>
+                            </div>
+                            <div class="profile-detail-item">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span id="profile-alamat">—</span>
+                            </div>
+                            <div class="profile-detail-item">
+                                <i class="fas fa-phone"></i>
+                                <span id="profile-telepon">—</span>
+                            </div>
+                            <div class="profile-detail-item">
+                                <i class="fas fa-envelope"></i>
+                                <span id="profile-email">—</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-badge-area">
+                        <span class="profile-id-badge" id="profile-smartbank-id">—</span>
+                        <span class="profile-status-badge"><i class="fas fa-check-circle"></i> Terverifikasi</span>
+                        <button class="btn-new-order" id="btn-open-new-order">
+                            <i class="fas fa-plus"></i> Pengiriman Baru
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- KPI / Middle Cards -->
+            <section class="kpi-section">
+                <div class="kpi-active-indicator" id="kpi-active-indicator">
+                    <i class="fas fa-tv"></i>
+                    <span>Detail View — Klik <strong>"Cek Detail"</strong> pada tabel riwayat untuk menampilkan data di card</span>
+                </div>
+                <div class="kpi-grid-new">
+                    <!-- Card 1: Tracking Status -->
+                    <div class="kpi-card-new kpi-tracking" id="card-tracking">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon tracking"><i class="fas fa-location-dot"></i></div>
+                            <h3>Tracking Status</h3>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="kpi-form-group">
+                                <label for="track-order-id">Order ID</label>
+                                <input type="text" id="track-order-id" placeholder="Masukkan Order ID">
+                            </div>
+                            <button id="btn-track" class="kpi-action-btn tracking-btn">
+                                <i class="fas fa-magnifying-glass"></i> Cek Status
+                            </button>
+                            <div id="tracking-result" class="kpi-result"></div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Biaya Pengiriman -->
+                    <div class="kpi-card-new kpi-cost" id="card-cost">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon cost"><i class="fas fa-calculator"></i></div>
+                            <h3>Biaya Pengiriman</h3>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div class="kpi-form-group">
+                                <label for="calc-jarak">Jarak (km)</label>
+                                <input type="number" id="calc-jarak" placeholder="Masukkan jarak" min="0" step="0.1">
+                            </div>
+                            <button id="btn-calc-ongkir" class="kpi-action-btn cost-btn">
+                                <i class="fas fa-rupiah-sign"></i> Hitung Ongkir
+                            </button>
+                            <div id="biaya-result" class="kpi-result"></div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Pembayaran SmartBank (Information Only) -->
+                    <div class="kpi-card-new kpi-payment" id="card-payment">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon payment"><i class="fas fa-credit-card"></i></div>
+                            <h3>Pembayaran SmartBank</h3>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div id="payment-result" class="kpi-result">
+                                <span class="info-placeholder"><i class="fas fa-info-circle"></i> Pilih order untuk melihat info pembayaran</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Biaya Layanan Logistik (Information Only) -->
+                    <div class="kpi-card-new kpi-fee" id="card-fee">
+                        <div class="kpi-card-header">
+                            <div class="kpi-icon fee"><i class="fas fa-percent"></i></div>
+                            <h3>Biaya Layanan Logistik</h3>
+                        </div>
+                        <div class="kpi-card-body">
+                            <div id="fee-result" class="kpi-result">
+                                <span class="info-placeholder"><i class="fas fa-info-circle"></i> Pilih order untuk melihat info fee layanan</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Grand Total: Total Pembayaran -->
+                <div class="grand-total-card" id="card-grand-total">
+                    <div class="grand-total-header">
+                        <div class="grand-total-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div>
+                            <h3>Total Pembayaran</h3>
+                            <p class="grand-total-subtitle">Ringkasan biaya untuk order yang dipilih</p>
+                        </div>
+                    </div>
+                    <div class="grand-total-body">
+                        <div class="grand-total-rows">
+                            <div class="grand-total-row">
+                                <span class="gt-label"><i class="fas fa-truck"></i> Biaya Pengiriman</span>
+                                <span class="gt-value" id="gt-ongkir">Rp 0</span>
+                            </div>
+                            <div class="grand-total-row">
+                                <span class="gt-label"><i class="fas fa-percent"></i> Fee Layanan (5%)</span>
+                                <span class="gt-value gt-fee" id="gt-fee">Rp 0</span>
+                            </div>
+                            <div class="grand-total-divider"></div>
+                            <div class="grand-total-row grand-total-final">
+                                <span class="gt-label"><i class="fas fa-coins"></i> Grand Total</span>
+                                <span class="gt-value gt-grand" id="gt-grand-total">Rp 0</span>
+                            </div>
+                        </div>
+                        <div class="grand-total-status">
+                            <span class="status-pembayaran" id="status-pembayaran">
+                                <i class="fas fa-clock"></i> Menunggu Pembayaran
+                            </span>
+                        </div>
+                        <button id="btn-bayar-total" class="btn-bayar-total" disabled>
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Bayar Sekaligus via SmartBank</span>
+                            <div class="btn-shine"></div>
+                        </button>
+                    </div>
+                    <!-- Hidden data holders -->
+                    <input type="hidden" id="gt-order-id" value="">
+                    <input type="hidden" id="gt-user-id" value="">
+                    <input type="hidden" id="gt-nominal" value="0">
+                </div>
+            </section>
+
+            <!-- Riwayat Pengiriman Table -->
+            <section class="history-section">
+                <div class="history-header">
+                    <div>
+                        <h2><i class="fas fa-clock-rotate-left"></i> Riwayat Pengiriman Anda</h2>
+                        <p class="history-subtitle">Daftar seluruh transaksi pengiriman yang pernah Anda lakukan</p>
+                    </div>
+                    <div class="history-actions">
+                        <button class="btn-new-order" id="btn-open-new-order-2">
+                            <i class="fas fa-plus"></i> Pengiriman Baru
+                        </button>
+                        <button class="kpi-action-btn tracking-btn" id="btn-refresh-history">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="history-table-wrapper">
+                    <table class="history-table" id="history-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Order ID</th>
+                                <th>Tanggal Request</th>
+                                <th>Alamat Tujuan</th>
+                                <th>Ongkir</th>
+                                <th>Status Pembayaran</th>
+                                <th>Status Pengiriman</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-tbody">
+                        </tbody>
+                    </table>
+                    <div id="history-empty" class="table-empty-msg">
+                        <i class="fas fa-inbox"></i>
+                        <p>Belum ada riwayat pengiriman.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 LogistiKita. Semua hak dilindungi. | Built with <i class="fas fa-heart"></i> for UMKM Indonesia</p>
+        </footer>
+    </div>
+
+    <!-- Modal: Pengiriman Baru -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-card" id="modal-card">
+            <div class="modal-header">
+                <h2><i class="fas fa-paper-plane"></i> Buat Pengiriman Baru</h2>
+                <button class="modal-close" id="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-new-order" class="modal-form">
+                <div class="modal-form-row">
+                    <div class="modal-form-group">
+                        <label for="new-alamat"><i class="fas fa-map-marker-alt"></i> Alamat Tujuan</label>
+                        <input type="text" id="new-alamat" placeholder="Contoh: Jl. Dago No.45, Bandung" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="new-jarak"><i class="fas fa-road"></i> Jarak Pengiriman (km)</label>
+                        <input type="number" id="new-jarak" placeholder="Contoh: 25" min="0.1" step="0.1" required>
+                    </div>
+                </div>
+                <div class="modal-preview" id="modal-preview">
+                    <div class="modal-preview-item">
+                        <span>Estimasi Ongkir</span>
+                        <strong id="preview-ongkir">—</strong>
+                    </div>
+                    <div class="modal-preview-item">
+                        <span>Fee Layanan (5%)</span>
+                        <strong id="preview-fee">—</strong>
+                    </div>
+                    <div class="modal-preview-item total">
+                        <span>Total Biaya</span>
+                        <strong id="preview-total">—</strong>
+                    </div>
+                </div>
+                <div id="modal-alert" class="modal-alert"></div>
+                <button type="submit" class="modal-submit-btn" id="modal-submit-btn">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Kirim Permintaan Pengiriman</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toast-container">
+        <div class="toast-notification-new" id="toast-notification">
+            <div class="toast-icon" id="toast-icon">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <div class="toast-body">
+                <strong class="toast-title" id="toast-title">Memproses...</strong>
+                <p class="toast-message" id="toast-message">Request API berhasil dikirim! Menunggu validasi SmartBank...</p>
+            </div>
+            <button class="toast-close" id="toast-close" onclick="hideToast()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Tracking Map Modal -->
+    <div class="modal-overlay" id="map-modal">
+        <div class="modal-card map-modal-card">
+            <div class="modal-header">
+                <h2><i class="fas fa-satellite-dish"></i> Live Tracking</h2>
+                <button class="modal-close" id="map-modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="map-status-bar">
+                <span class="pulse-dot"></span> <span id="map-status-text">Menghubungkan ke GPS Kurir...</span>
+            </div>
+            <div id="tracking-map" style="height: 350px; width: 100%; border-radius: 8px; background: #dfe6e9;"></div>
+            <div class="map-footer">
+                <p class="map-info"><i class="fas fa-info-circle"></i> Simulasi pergerakan kurir secara real-time</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/dashboard-new.js"></script>
+</body>
+</html>

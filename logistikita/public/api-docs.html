@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogistiKita API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .doc-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .doc-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .doc-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .doc-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .doc-card a {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        .doc-card a:hover {
+            background: #764ba2;
+        }
+        .endpoint-list {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .endpoint-list h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+        .endpoint {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .endpoint:last-child {
+            border-bottom: none;
+        }
+        .method {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+        .method.get {
+            background: #61affe;
+        }
+        .method.post {
+            background: #49cc90;
+        }
+        .method.put {
+            background: #fca130;
+        }
+        .method.delete {
+            background: #f93e3e;
+        }
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            color: #333;
+            font-weight: 600;
+        }
+        .endpoint-desc {
+            color: #666;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .servers {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        .servers h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+        .server-item {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .server-url {
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .server-desc {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚚 LogistiKita API Documentation</h1>
+            <p>Multi-Role Logistics Management System - API Reference & Integration Guide</p>
+        </div>
+
+        <div class="docs-grid">
+            <div class="doc-card">
+                <h3>📚 Interactive API Docs</h3>
+                <p>Explore, test, and interact with all API endpoints using Swagger UI interface.</p>
+                <a href="/api-docs">Go to Swagger UI →</a>
+            </div>
+            <div class="doc-card">
+                <h3>🔐 Authentication</h3>
+                <p>Learn about API Key authentication for partners and Bearer Token for internal users.</p>
+                <p style="font-size: 13px; color: #999;">Check Swagger docs for details</p>
+            </div>
+            <div class="doc-card">
+                <h3>📦 Shipment Tracking</h3>
+                <p>Real-time tracking and status updates for logistics shipments.</p>
+                <p style="font-size: 13px; color: #999;">Available via REST API</p>
+            </div>
+            <div class="doc-card">
+                <h3>🔗 Partner Integration</h3>
+                <p>B2B API for marketplace partners and third-party integrations.</p>
+                <p style="font-size: 13px; color: #999;">Base: /api/v1/</p>
+            </div>
+            <div class="doc-card">
+                <h3>💳 Payment Gateway</h3>
+                <p>Integrated payment processing and transaction management.</p>
+                <p style="font-size: 13px; color: #999;">Route: /api/bayar-ongkir</p>
+            </div>
+            <div class="doc-card">
+                <h3>🪝 Webhooks</h3>
+                <p>Event-driven notifications for order and shipment updates.</p>
+                <p style="font-size: 13px; color: #999;">Route: /webhook/*</p>
+            </div>
+        </div>
+
+        <div class="servers">
+            <h2>🖥️ Available Servers</h2>
+            <div class="server-item">
+                <div class="server-url">http://localhost:3000</div>
+                <div class="server-desc">🌐 Customer/Landing - Public customer interface</div>
+            </div>
+            <div class="server-item">
+                <div class="server-url">http://localhost:3001</div>
+                <div class="server-desc">👔 Admin Dashboard - Admin management console</div>
+            </div>
+            <div class="server-item">
+                <div class="server-url">http://localhost:3002</div>
+                <div class="server-desc">🛡️ Super Admin - System administration</div>
+            </div>
+            <div class="server-item">
+                <div class="server-url">http://localhost:3003</div>
+                <div class="server-desc">🏢 Operator Cabang - Branch operator interface</div>
+            </div>
+            <div class="server-item">
+                <div class="server-url">http://localhost:3004</div>
+                <div class="server-desc">🚚 Kurir Lapangan - Field courier mobile app</div>
+            </div>
+            <div class="server-item">
+                <div class="server-url">http://localhost:3005</div>
+                <div class="server-desc">🏪 Simulator Mitra - Partner integration simulator</div>
+            </div>
+        </div>
+
+        <div class="endpoint-list">
+            <h2>📋 Main API Routes</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/</span>
+                <div class="endpoint-desc">Landing page / gateway interface</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/gateway/*</span>
+                <div class="endpoint-desc">SmartBank ID gateway integration</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/api/v1/*</span>
+                <div class="endpoint-desc">B2B API endpoints for partner businesses (requires API Key)</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/auth/*</span>
+                <div class="endpoint-desc">Authentication endpoints for user login/logout</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/internal/*</span>
+                <div class="endpoint-desc">Internal admin API (requires Bearer Token)</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/internal/dispatcher/*</span>
+                <div class="endpoint-desc">Dispatcher management endpoints</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/customer/*</span>
+                <div class="endpoint-desc">Customer dashboard & tracking</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/superadmin/*</span>
+                <div class="endpoint-desc">Super admin control panel</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/api/bayar-ongkir</span>
+                <div class="endpoint-desc">Payment processing for shipping rates</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <span class="endpoint-path">/webhook/tokobagus</span>
+                <div class="endpoint-desc">Webhook receiver for marketplace events</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/webhook/tokobagus/logs</span>
+                <div class="endpoint-desc">View webhook event logs</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api-docs</span>
+                <div class="endpoint-desc">Interactive Swagger UI documentation</div>
+            </div>
+
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="endpoint-path">/api-docs.json</span>
+                <div class="endpoint-desc">OpenAPI 3.0 specification (JSON format)</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

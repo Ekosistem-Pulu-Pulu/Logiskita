@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogistiKita — Cek Dashboard Pengiriman</title>
+    <meta name="description" content="Masukkan ID SmartBank Anda untuk mengakses dashboard pengiriman UMKM LogistiKita.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-gateway">
+
+    <!-- Animated Orbs Background -->
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="gateway-wrapper">
+        <!-- Gateway Card -->
+        <div class="gateway-card" id="gateway-card">
+            <!-- Logo Header -->
+            <div class="gateway-logo">
+                <div class="gateway-logo-icon">
+                    <i class="fas fa-truck-fast"></i>
+                </div>
+                <h1>LogistiKita</h1>
+                <p class="gateway-tagline">Dasbor Pengiriman UMKM</p>
+            </div>
+
+            <!-- Divider -->
+            <div class="gateway-divider"></div>
+
+            <!-- Form -->
+            <form id="gateway-form" autocomplete="off">
+                <div class="gateway-form-group">
+                    <label for="smartbank-id">
+                        <i class="fas fa-id-card-clip"></i>
+                        Masukkan ID SmartBank Anda
+                    </label>
+                    <div class="gateway-input-wrapper">
+                        <i class="fas fa-fingerprint gateway-input-icon"></i>
+                        <input 
+                            type="text" 
+                            id="smartbank-id" 
+                            name="smartbank_id"
+                            placeholder="Contoh: SB-714240035" 
+                            required 
+                            autocomplete="off"
+                            spellcheck="false"
+                        >
+                        <div class="gateway-input-glow"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="gateway-submit-btn" id="gateway-submit-btn">
+                    <i class="fas fa-arrow-right-to-bracket"></i>
+                    <span>Akses Dasbor</span>
+                    <div class="btn-shine"></div>
+                </button>
+            </form>
+
+            <!-- Alert Box -->
+            <div id="gateway-alert" class="gateway-alert"></div>
+
+            <!-- Help Info -->
+            <div class="gateway-help">
+                <div class="gateway-help-icon">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+                <p>
+                    <strong>Keamanan Terpusat:</strong> Sesuai ekosistem, gunakan ID resmi dari SmartBank untuk memantau pengiriman UMKM Anda.
+                </p>
+            </div>
+        </div>
+
+        <!-- Bottom Links -->
+        <div class="gateway-footer-links">
+            <a href="index.html" class="gateway-link">
+                <i class="fas fa-globe"></i> Halaman Utama
+            </a>
+            <span class="gateway-link-divider">|</span>
+            <a href="admin-login.html" class="gateway-link">
+                <i class="fas fa-user-shield"></i> Panel Admin
+            </a>
+        </div>
+    </div>
+
+    <script src="js/gateway.js"></script>
+</body>
+</html>
