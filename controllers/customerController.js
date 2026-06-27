@@ -7,39 +7,10 @@ const db = require('../db');
 const { calculateDistance, isInServiceArea } = require('../services/geocodeService');
 const paymentService = require('../services/paymentService');
 const transitService = require('../services/transitService');
+const pricingService = require('../services/PricingService');
+const branchLookup = require('../services/BranchLookupService');
 
 const ADMIN_FEE_PERCENT = 0.03; // 3%
-
-// Helper to find nearest branch based on coordinates
-async function findNearestBranch(lat, lng, connection) {
-    if (lat === undefined || lat === null || lng === undefined || lng === null) return null;
-    const targetLat = parseFloat(lat);
-    const targetLng = parseFloat(lng);
-    if (isNaN(targetLat) || isNaN(targetLng)) return null;
-
-    const [branches] = await connection.execute(
-        'SELECT id, lat, lng FROM branches WHERE status = "Active"'
-    );
-    if (branches.length === 0) return null;
-
-    let nearestBranchId = null;
-    let minDistance = Infinity;
-
-    for (const branch of branches) {
-        if (branch.lat !== null && branch.lng !== null) {
-            const bLat = parseFloat(branch.lat);
-            const bLng = parseFloat(branch.lng);
-            if (isNaN(bLat) || isNaN(bLng)) continue;
-
-            const dist = calculateDistance(targetLat, targetLng, bLat, bLng);
-            if (dist < minDistance) {
-                minDistance = dist;
-                nearestBranchId = branch.id;
-            }
-        }
-    }
-    return nearestBranchId;
-}
 
 // ============================================================
 // POST /api/v1/customer/shipments - Buat Shipment Baru
@@ -126,12 +97,7 @@ exports.createShipment = async (req, res) => {
         }
 
         // Hitung ongkir
-        const biayaJarak = parseFloat(rate.price_per_km) * distanceKm;
-        const biayaBerat = parseFloat(rate.price_per_kg) * parsedWeight;
-        const ongkir = parseFloat(rate.base_price) + biayaJarak + biayaBerat;
-        const ongkirRounded = Math.ceil(ongkir / 100) * 100;
-        const biayaAdmin = Math.round(ongkirRounded * ADMIN_FEE_PERCENT);
-        const totalBiaya = ongkirRounded + biayaAdmin;
+        const { ongkirRounded, biayaAdmin, totalBiaya } = pricingService.calculatePricing(rate, distanceKm, parsedWeight);
 
         // Generate AWB Number
         const awbNumber = 'LSK' + Date.now().toString().slice(-10) + Math.floor(Math.random() * 100);
@@ -140,31 +106,12 @@ exports.createShipment = async (req, res) => {
         const partnerId = null;
 
         // Cari Origin dan Destination Branch berdasarkan koordinat terdekat
-        let originBranchId = null;
-        let destBranchId = null;
-
-        if (oLat && oLng) {
-            originBranchId = await findNearestBranch(oLat, oLng, connection);
-        }
-        if (dLat && dLng) {
-            destBranchId = await findNearestBranch(dLat, dLng, connection);
-        }
-
-        // Fallback ke pencarian nama kota jika koordinat gagal
-        if (!originBranchId && sender_city) {
-            const [b1] = await connection.execute(
-                'SELECT id FROM branches WHERE city LIKE ? OR ? LIKE CONCAT("%", city, "%") LIMIT 1', 
-                [`%${sender_city}%`, sender_city]
-            );
-            if (b1.length > 0) originBranchId = b1[0].id;
-        }
-        if (!destBranchId && receiver_city) {
-            const [b2] = await connection.execute(
-                'SELECT id FROM branches WHERE city LIKE ? OR ? LIKE CONCAT("%", city, "%") LIMIT 1', 
-                [`%${receiver_city}%`, receiver_city]
-            );
-            if (b2.length > 0) destBranchId = b2[0].id;
-        }
+        const branches = await branchLookup.resolveBranches({
+            senderLat: oLat, senderLng: oLng,
+            receiverLat: dLat, receiverLng: dLng
+        }, connection);
+        let originBranchId = branches.originBranchId;
+        let destBranchId = branches.destBranchId;
 
         // Fallback default jika tidak terdeteksi (jangan biarkan NULL)
         if (!originBranchId) originBranchId = 1; // Cabang Utama Jakarta
@@ -335,29 +282,13 @@ exports.processPayment = async (req, res) => {
         let originBranchId = shipment.origin_branch_id;
         let destBranchId = shipment.destination_branch_id || shipment.final_branch_id;
 
-        if (!originBranchId) {
-            if (shipment.sender_lat && shipment.sender_lng) {
-                originBranchId = await findNearestBranch(shipment.sender_lat, shipment.sender_lng, connection);
-            }
-            if (!originBranchId && shipment.sender_city) {
-                const [b1] = await connection.execute(
-                    'SELECT id FROM branches WHERE city LIKE ? OR ? LIKE CONCAT("%", city, "%") LIMIT 1',
-                    [`%${shipment.sender_city}%`, shipment.sender_city]
-                );
-                if (b1.length > 0) originBranchId = b1[0].id;
-            }
-        }
-        if (!destBranchId) {
-            if (shipment.receiver_lat && shipment.receiver_lng) {
-                destBranchId = await findNearestBranch(shipment.receiver_lat, shipment.receiver_lng, connection);
-            }
-            if (!destBranchId && shipment.receiver_city) {
-                const [b2] = await connection.execute(
-                    'SELECT id FROM branches WHERE city LIKE ? OR ? LIKE CONCAT("%", city, "%") LIMIT 1',
-                    [`%${shipment.receiver_city}%`, shipment.receiver_city]
-                );
-                if (b2.length > 0) destBranchId = b2[0].id;
-            }
+        if (!originBranchId || !destBranchId) {
+            const branches = await branchLookup.resolveBranches({
+                senderLat: shipment.sender_lat, senderLng: shipment.sender_lng,
+                receiverLat: shipment.receiver_lat, receiverLng: shipment.receiver_lng
+            }, connection);
+            if (!originBranchId) originBranchId = branches.originBranchId;
+            if (!destBranchId) destBranchId = branches.destBranchId;
         }
 
         // Hard fallbacks jika masih gagal

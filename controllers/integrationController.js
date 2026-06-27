@@ -2,8 +2,10 @@
 const db = require('../db');
 const config = require('../config/integration');
 const axios = require('axios');
-const { calculateDistance } = require('../services/geocodeService');
 const transitService = require('../services/transitService');
+const pricingService = require('../services/PricingService');
+const webhookOrchestrator = require('../services/WebhookOrchestrator');
+const branchLookup = require('../services/BranchLookupService');
 
 // Logging helper to save RAW request/response payloads in api_logs
 async function logIntegration(partnerName, method, endpoint, requestPayload, responseStatus, responseBody, executionTime = 0) {
@@ -84,30 +86,7 @@ exports.integrationTest = async (req, res) => {
     await logIntegration('API Gateway (Praktikum)', 'GET', '/api/v1/integration-test', {}, 200, results, Date.now() - startTime);
 };
 
-// Helper function to find nearest branch
-async function findNearestBranch(lat, lng, connection) {
-    if (lat === undefined || lat === null || lng === undefined || lng === null) return null;
-    const targetLat = parseFloat(lat);
-    const targetLng = parseFloat(lng);
-    if (isNaN(targetLat) || isNaN(targetLng)) return null;
 
-    const [branches] = await connection.execute('SELECT id, lat, lng FROM branches WHERE status = "Active"');
-    if (branches.length === 0) return null;
-
-    let nearestBranchId = null;
-    let minDistance = Infinity;
-
-    for (const branch of branches) {
-        if (branch.lat !== null && branch.lng !== null) {
-            const dist = calculateDistance(targetLat, targetLng, parseFloat(branch.lat), parseFloat(branch.lng));
-            if (dist < minDistance) {
-                minDistance = dist;
-                nearestBranchId = branch.id;
-            }
-        }
-    }
-    return nearestBranchId;
-}
 
 // 3. POST /api/v1/create-shipment - Create Shipment (requested by external groups)
 exports.createShipmentExternal = async (req, res) => {
@@ -125,12 +104,12 @@ exports.createShipmentExternal = async (req, res) => {
         return;
     }
 
+    const pricing = pricingService.hitungOngkirShipment(weight, service_type);
     const parsedWeight = parseFloat(weight) || 1.0;
-    const selectedService = service_type === 'Express' ? 'Express' : 'Reguler';
-    const pricePerKg = selectedService === 'Express' ? 25000 : 15000;
-    const ongkir = parsedWeight * pricePerKg;
-    const biayaLayanan = ongkir * 0.03; // 3% Admin fee
-    const totalBiaya = ongkir + biayaLayanan;
+    const selectedService = pricing.selectedService;
+    const ongkir = pricing.ongkir;
+    const biayaLayanan = pricing.biayaLayanan;
+    const totalBiaya = pricing.totalBiaya;
 
     const awbNumber = 'LSK' + Date.now().toString().slice(-9) + Math.floor(Math.random() * 10);
 
@@ -141,17 +120,13 @@ exports.createShipmentExternal = async (req, res) => {
         let originBranchId = null;
         let destBranchId = null;
 
-        if (sender_city) {
-            const [b1] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${sender_city}%`]);
-            if (b1.length > 0) originBranchId = b1[0].id;
-        }
-        if (receiver_city) {
-            const [b2] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${receiver_city}%`]);
-            if (b2.length > 0) destBranchId = b2[0].id;
-        }
-
-        if (!originBranchId) originBranchId = 1;
-        if (!destBranchId) destBranchId = 2;
+        // Gunakan BranchLookupService untuk resolusi cabang
+        const branches = await branchLookup.resolveBranches({
+            senderCity: sender_city,
+            receiverCity: receiver_city
+        }, connection);
+        originBranchId = branches.originBranchId;
+        destBranchId = branches.destBranchId;
 
         await connection.execute(
             `INSERT INTO shipments (
@@ -273,12 +248,12 @@ exports.checkRatesExternal = async (req, res) => {
 
         let options = [];
         if (rows.length === 0) {
-            // Default pricing
-            const defaultReg = weight * 15000;
-            const defaultExp = weight * 25000;
+            // Gunakan PricingService untuk default pricing
+            const reguler = pricingService.hitungOngkirShipment(weight, 'Reguler');
+            const express = pricingService.hitungOngkirShipment(weight, 'Express');
             options = [
-                { service: 'Reguler', price: defaultReg, estimasi: '3-4 Hari' },
-                { service: 'Express', price: defaultExp, estimasi: '1-2 Hari' }
+                { service: 'Reguler', price: reguler.ongkir, estimasi: '3-4 Hari' },
+                { service: 'Express', price: express.ongkir, estimasi: '1-2 Hari' }
             ];
         } else {
             const tarif = rows[0];
@@ -321,108 +296,20 @@ exports.paymentSuccessWebhook = async (req, res) => {
         return;
     }
 
-    const connection = await db.getConnection();
     try {
-        await connection.beginTransaction();
+        // Delegasi seluruh proses ke WebhookOrchestrator
+        const result = await webhookOrchestrator.processPaymentSuccessWebhook(awb_number, transaction_id);
 
-        // 1. Find the shipment
-        const [shipments] = await connection.execute(
-            'SELECT * FROM shipments WHERE awb_number = ? FOR UPDATE',
-            [awb_number]
-        );
-
-        if (shipments.length === 0) {
-            await connection.rollback();
-            const errRes = { status: 'Error', message: 'Shipment AWB not found' };
-            res.status(404).json(errRes);
-            await logIntegration('SmartBank (Praktikum)', 'POST', '/api/v1/webhook/payment-success', req.body, 404, errRes, Date.now() - startTime);
-            return;
-        }
-
-        const shipment = shipments[0];
-
-        // 2. Set paid status
-        await connection.execute(
-            'UPDATE shipments SET payment_status = "Paid", status = "Pending", smartbank_trx_id = ? WHERE awb_number = ?',
-            [transaction_id, awb_number]
-        );
-
-        // 3. Insert legacy transactions and sync orders
-        const [existingOrders] = await connection.execute('SELECT * FROM orders WHERE order_id = ?', [awb_number]);
-        if (existingOrders.length === 0) {
-            await connection.execute(
-                'INSERT INTO orders (order_id, user_id, alamat, jarak, ongkir, status, pembayaran, transaction_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                [awb_number, shipment.external_order_id || 'CUSTOMER', shipment.receiver_address, shipment.distance_km || 0, shipment.ongkir, 'Pending', 'Lunas', transaction_id]
-            );
-        } else {
-            await connection.execute(
-                'UPDATE orders SET pembayaran = "Lunas", transaction_id = ?, status = "Pending" WHERE order_id = ?',
-                [transaction_id, awb_number]
-            );
-        }
-
-        await connection.execute(
-            'INSERT INTO transactions (transaction_id, order_id, user_id, amount, fee_layanan, fee_bank, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [transaction_id, awb_number, shipment.external_order_id || 'CUSTOMER', shipment.ongkir, shipment.biaya_layanan, 0, shipment.total_biaya]
-        );
-
-        // 4. Generate Transit Legs
-        let originBranchId = shipment.origin_branch_id || 1;
-        let destBranchId = shipment.destination_branch_id || 2;
-        await transitService.generateTransitLegs(shipment.id, awb_number, originBranchId, destBranchId, connection);
-
-        // 5. Insert tracking log
-        await connection.execute(
-            'INSERT INTO tracking_logs (awb_number, status, description, location) VALUES (?, "Pending", "Pembayaran lunas terkonfirmasi via API Gateway Webhook. Paket siap dikirim.", "Gudang LogistiKita")',
-            [awb_number]
-        );
-
-        // 6. Update integration transaction record if exists
-        await connection.execute(
-            `UPDATE integration_transactions 
-             SET connection_status = "Connected", smartbank_status = "Paid", shipment_status = "Created", webhook_status = "Received" 
-             WHERE awb_number = ?`,
-            [awb_number]
-        );
-
-        await connection.commit();
-
-        const successRes = { status: 'Success', message: 'Webhook processed successfully, shipment paid.' };
+        const successRes = { status: 'Success', message: result.message };
         res.json(successRes);
         await logIntegration('SmartBank (Praktikum)', 'POST', '/api/v1/webhook/payment-success', req.body, 200, successRes, Date.now() - startTime);
 
-        // Trigger asynchronous webhook update to Marketplace
-        if (config.marketplace.webhookUrl) {
-            setTimeout(async () => {
-                const mpStartTime = Date.now();
-                const mpPayload = {
-                    event: 'payment.success',
-                    awb_number: awb_number,
-                    transaction_id: transaction_id,
-                    status: 'Paid',
-                    timestamp: new Date().toISOString()
-                };
-                try {
-                    console.log(`[Marketplace Callback] Sending success callback to: ${config.marketplace.webhookUrl}`);
-                    const mpRes = await axios.post(config.marketplace.webhookUrl, mpPayload, { timeout: 3000 });
-                    await logIntegration('Marketplace (Praktikum)', 'POST', '/webhook/tokobagus', mpPayload, mpRes.status, mpRes.data, Date.now() - mpStartTime);
-                    await db.execute('UPDATE integration_transactions SET marketplace_status = "Sent" WHERE awb_number = ?', [awb_number]);
-                } catch (e) {
-                    console.error('[Marketplace Webhook Callback failed]', e.message);
-                    await logIntegration('Marketplace (Praktikum)', 'POST', '/webhook/tokobagus', mpPayload, 500, { error: e.message }, Date.now() - mpStartTime);
-                    await db.execute('UPDATE integration_transactions SET marketplace_status = "Failed" WHERE awb_number = ?', [awb_number]);
-                }
-            }, 1000);
-        }
-
     } catch (err) {
-        await connection.rollback();
         console.error('[Payment Success Webhook Error]', err);
+        const statusCode = err.message === 'Shipment AWB not found' ? 404 : 500;
         const errRes = { status: 'Error', message: 'Failed to process webhook: ' + err.message };
-        res.status(500).json(errRes);
-        await logIntegration('SmartBank (Praktikum)', 'POST', '/api/v1/webhook/payment-success', req.body, 500, errRes, Date.now() - startTime);
-    } finally {
-        connection.release();
+        res.status(statusCode).json(errRes);
+        await logIntegration('SmartBank (Praktikum)', 'POST', '/api/v1/webhook/payment-success', req.body, statusCode, errRes, Date.now() - startTime);
     }
 };
 

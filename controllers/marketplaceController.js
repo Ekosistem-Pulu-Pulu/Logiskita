@@ -1,6 +1,8 @@
 const db = require('../db');
 const rateController = require('./rateController');
 const webhookService = require('../services/webhookService');
+const pricingService = require('../services/PricingService');
+const branchLookup = require('../services/BranchLookupService');
 
 // POST /api/v1/marketplace/check-ongkir
 exports.checkOngkir = async (req, res) => {
@@ -25,13 +27,12 @@ exports.createShipment = async (req, res) => {
         });
     }
 
-    const parsedWeight = parseFloat(weight) || 1;
-    const selectedService = service_type === 'Express' ? 'Express' : 'Reguler';
-
-    const tarifPerKg = selectedService === 'Express' ? 25000 : 15000;
-    const ongkir = parsedWeight * tarifPerKg;
-    const biayaLayanan = ongkir * 0.05;
-    const totalBiaya = ongkir + biayaLayanan;
+    const pricing = pricingService.hitungOngkirShipment(weight, service_type);
+    const parsedWeight = parseFloat(weight) || 1.0;
+    const selectedService = pricing.selectedService;
+    const ongkir = pricing.ongkir;
+    const biayaLayanan = pricing.biayaLayanan;
+    const totalBiaya = pricing.totalBiaya;
 
     const awbNumber = 'LSK' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 1000);
 
@@ -39,16 +40,12 @@ exports.createShipment = async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        let originBranchId = null;
-        let destBranchId = null;
-        if (sender_city) {
-            const [b1] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${sender_city}%`]);
-            if (b1.length > 0) originBranchId = b1[0].id;
-        }
-        if (receiver_city) {
-            const [b2] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${receiver_city}%`]);
-            if (b2.length > 0) destBranchId = b2[0].id;
-        }
+        const branches = await branchLookup.resolveBranches({
+            senderCity: sender_city,
+            receiverCity: receiver_city
+        }, connection);
+        let originBranchId = branches.originBranchId;
+        let destBranchId = branches.destBranchId;
 
         // Optional payment verification placeholder
         // In real implementation, verify payment_id via payment gateway API

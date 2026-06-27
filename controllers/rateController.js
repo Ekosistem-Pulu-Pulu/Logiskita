@@ -5,6 +5,7 @@
 
 const db = require('../db');
 const { calculateDistance, isInServiceArea } = require('../services/geocodeService');
+const pricingService = require('../services/PricingService');
 
 /**
  * POST /api/v1/rates/check
@@ -109,12 +110,10 @@ exports.checkRates = async (req, res) => {
                 return true;
             })
             .map(rate => {
-                const biayaJarak = parseFloat(rate.price_per_km) * distanceKm;
-                const biayaBerat = parseFloat(rate.price_per_kg) * parsedWeight;
-                const ongkir = parseFloat(rate.base_price) + biayaJarak + biayaBerat;
-                const ongkirRounded = Math.ceil(ongkir / 100) * 100; // Bulatkan ke 100 terdekat
-                const biayaAdmin = Math.round(ongkirRounded * ADMIN_FEE_PERCENT);
-                const total = ongkirRounded + biayaAdmin;
+                const pricing = pricingService.calculatePricing(rate, distanceKm, parsedWeight);
+                const ongkirRounded = pricing.ongkirRounded;
+                const biayaAdmin = pricing.biayaAdmin;
+                const total = pricing.totalBiaya;
 
                 return {
                     rate_id: rate.id,
@@ -122,8 +121,8 @@ exports.checkRates = async (req, res) => {
                     estimasi: rate.estimasi,
                     breakdown: {
                         biaya_dasar: parseFloat(rate.base_price),
-                        biaya_jarak: Math.round(biayaJarak),
-                        biaya_berat: Math.round(biayaBerat),
+                        biaya_jarak: Math.round(pricing.biayaJarak),
+                        biaya_berat: Math.round(pricing.biayaBerat),
                         tarif_per_km: parseFloat(rate.price_per_km),
                         tarif_per_kg: parseFloat(rate.price_per_kg)
                     },

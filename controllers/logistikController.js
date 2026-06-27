@@ -1,5 +1,6 @@
 const db = require('../db');
-const smartbankService = require('../services/smartbankService');
+const pricingService = require('../services/PricingService');
+const paymentGatewayService = require('../services/PaymentGatewayService');
 
 // ============================================================
 // 1. Biaya Pengiriman (Hitung Ongkir)
@@ -15,28 +16,17 @@ exports.biayaPengiriman = (req, res) => {
     if (jarak === undefined || isNaN(parseFloat(jarak)) || parseFloat(jarak) <= 0) {
         return res.status(400).json({ status: "Error", message: "Parameter jarak harus valid" });
     }
-    
-    const parsedJarak = parseFloat(jarak);
-    const parsedBerat = parseFloat(berat) || 1;
-    const biayaDasar = parsedJarak * 5000;
-    const biayaBerat = parsedBerat * 2000;
-    const estimasi_biaya = biayaDasar + biayaBerat;
-    const biaya_layanan = estimasi_biaya * 0.03;
-    const total = estimasi_biaya + biaya_layanan;
+
+    const hasil = pricingService.hitungOngkirByJarak(jarak, berat);
 
     res.json({ 
         status: "Success", 
         data: { 
-            estimasi_biaya, 
-            biaya_layanan,
-            total,
+            estimasi_biaya: hasil.estimasi_biaya, 
+            biaya_layanan: hasil.biaya_layanan,
+            total: hasil.total,
             user_id,
-            detail: {
-                jarak: parsedJarak,
-                berat: parsedBerat,
-                tarif_per_km: 5000,
-                tarif_per_kg: 2000
-            }
+            detail: hasil.detail
         } 
     });
 };
@@ -63,7 +53,8 @@ exports.requestPengiriman = async (req, res) => {
     }
 
     const order_id = "ORD-" + Math.floor(Math.random() * 10000);
-    const ongkir = parseFloat(jarak) * 5000;
+    const hasil = pricingService.hitungOngkirByJarak(jarak);
+    const ongkir = hasil.estimasi_biaya;
     
     try {
         await db.execute(
@@ -94,49 +85,44 @@ exports.pembayaranLogistik = async (req, res) => {
     }
 
     const parsedAmount = parseFloat(amount);
-    
-    // Panggil service external SmartBank
-    const bankResponse = await smartbankService.processPayment(user_id, order_id, parsedAmount);
+    const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:4000/api/gateway/payment';
 
-    if (bankResponse.success) {
-        const connection = await db.getConnection();
-        try {
-            await connection.beginTransaction();
-            
-            const [orderRows] = await connection.execute('SELECT * FROM orders WHERE order_id = ? AND user_id = ? FOR UPDATE', [order_id, user_id]);
-            if (orderRows.length === 0) throw new Error("Order ID tidak valid atau bukan milik user ini");
-            if (orderRows[0].pembayaran === 'Lunas') throw new Error("Order ini sudah dibayar sebelumnya");
-            
-            await connection.execute('UPDATE orders SET pembayaran = ?, transaction_id = ? WHERE order_id = ?', ['Lunas', bankResponse.transaction_id, order_id]);
-            
-            const feeLayanan = parsedAmount * 0.03;
-            const feeBank = parsedAmount * 0.01;
-            const total = parsedAmount + feeLayanan + feeBank;
-            
-            await connection.execute(
-                'INSERT INTO transactions (transaction_id, order_id, user_id, amount, fee_layanan, fee_bank, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [bankResponse.transaction_id, order_id, user_id, parsedAmount, feeLayanan, feeBank, total]
-            );
-            
-            await connection.commit();
-            
-            res.json({ 
-                status: "Success", 
-                message: "Pembayaran via SmartBank Berhasil",
-                transaction_id: bankResponse.transaction_id,
-                data: {
-                    order_id, amount: parsedAmount, fee_layanan: feeLayanan, total
-                }
-            });
-        } catch (error) {
-            await connection.rollback();
-            console.error(error);
-            res.status(500).json({ status: "Error", message: error.message || "Gagal menyimpan transaksi ke database" });
-        } finally {
-            connection.release();
-        }
-    } else {
-        res.status(500).json({ status: "Error", message: "Gagal integrasi SmartBank" });
+    // Step 1: Proses pembayaran via Gateway (dengan fallback otomatis)
+    const paymentResult = await paymentGatewayService.processPaymentWithFallback(
+        { order_id, user_id, nominal: parsedAmount },
+        API_GATEWAY_URL
+    );
+
+    if (!paymentResult.success) {
+        return res.status(500).json({ status: "Error", message: "Gagal integrasi SmartBank/Gateway" });
+    }
+
+    // Step 2: Simpan transaksi ke database
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const txResult = await paymentGatewayService.savePaymentTransaction(connection, {
+            order_id, user_id, nominal: parsedAmount,
+            transaction_id: paymentResult.transaction_id
+        });
+
+        await connection.commit();
+
+        res.json({ 
+            status: "Success", 
+            message: "Pembayaran via SmartBank Berhasil",
+            transaction_id: paymentResult.transaction_id,
+            data: {
+                order_id, amount: parsedAmount, fee_layanan: txResult.feeLayanan, total: txResult.total
+            }
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error(error);
+        res.status(500).json({ status: "Error", message: error.message || "Gagal menyimpan transaksi ke database" });
+    } finally {
+        connection.release();
     }
 };
 
@@ -155,14 +141,13 @@ exports.biayaLayananLogistik = (req, res) => {
         return res.status(400).json({ status: "Error", message: "Parameter amount harus valid" });
     }
     
-    const parsedAmount = parseFloat(amount);
-    const feeLayanan = parsedAmount * 0.03;
+    const hasil = pricingService.hitungFeeLayanan(amount);
     res.json({ 
         status: "Success", 
         data: { 
-            biaya_layanan: feeLayanan, 
-            nominal_asli: parsedAmount,
-            total_setelah_fee: parsedAmount + feeLayanan,
+            biaya_layanan: hasil.biaya_layanan, 
+            nominal_asli: hasil.nominal_asli,
+            total_setelah_fee: hasil.total_setelah_fee,
             user_id 
         } 
     });
@@ -260,42 +245,15 @@ exports.cekOngkir = async (req, res) => {
         return res.status(400).json({ status: "Error", message: "Kota asal dan kota tujuan wajib diisi" });
     }
 
-    const parsedBerat = parseFloat(berat) || 1;
-
     try {
-        const [rows] = await db.execute(
-            'SELECT * FROM tarif WHERE LOWER(kota_asal) = LOWER(?) AND LOWER(kota_tujuan) = LOWER(?)',
-            [kota_asal, kota_tujuan]
-        );
-
-        if (rows.length === 0) {
-            const defaultReguler = parsedBerat * 15000;
-            const defaultExpress = parsedBerat * 25000;
-            return res.json({
-                status: 'Success',
-                message: 'Rute tidak ditemukan, menggunakan tarif default',
-                data: {
-                    kota_asal, kota_tujuan, berat: parsedBerat,
-                    options: [
-                        { service: 'Reguler', harga: defaultReguler, biaya_layanan: defaultReguler * 0.03, total: defaultReguler * 1.03, estimasi: '3-5 Hari' },
-                        { service: 'Express', harga: defaultExpress, biaya_layanan: defaultExpress * 0.03, total: defaultExpress * 1.03, estimasi: '1-2 Hari' }
-                    ]
-                }
-            });
-        }
-
-        const tarif = rows[0];
-        const hargaReguler = tarif.harga_reguler * parsedBerat;
-        const hargaExpress = tarif.harga_express * parsedBerat;
+        const hasil = await pricingService.hitungOngkirByKota(kota_asal, kota_tujuan, berat);
 
         res.json({
             status: 'Success',
+            message: hasil.source === 'default' ? 'Rute tidak ditemukan, menggunakan tarif default' : undefined,
             data: {
-                kota_asal, kota_tujuan, berat: parsedBerat,
-                options: [
-                    { service: 'Reguler', harga: hargaReguler, biaya_layanan: hargaReguler * 0.03, total: hargaReguler * 1.03, estimasi: tarif.estimasi_reguler },
-                    { service: 'Express', harga: hargaExpress, biaya_layanan: hargaExpress * 0.03, total: hargaExpress * 1.03, estimasi: tarif.estimasi_express }
-                ]
+                kota_asal, kota_tujuan, berat: parseFloat(berat) || 1,
+                options: hasil.options
             }
         });
     } catch (error) {
@@ -305,15 +263,9 @@ exports.cekOngkir = async (req, res) => {
 };
 
 // ============================================================
-// 6. Bayar Ongkir Sekaligus (Microservices Architecture)
-// Input: order_id, user_id, nominal (grand total inklusif fee)
-// Proses:
-//   1. Validasi input dari frontend
-//   2. Susun payload JSON (order_id, user_id, nominal)
-//   3. Kirim POST ke URL API Gateway/Integrator milik kelompok lain
-//   4. Jika gateway tidak tersedia, fallback ke SmartBank service lokal
-//   5. Update status pembayaran di database
-// Output: Status dari API Gateway dikembalikan ke frontend
+// 6. Bayar Ongkir Sekaligus (Refactored - Service Layer Pattern)
+// Controller hanya menangani validasi input dan respons HTTP.
+// Logika gateway, fallback, dan transaksi DB didelegasikan ke service.
 // Endpoint: POST /api/bayar-ongkir
 // ============================================================
 exports.bayarOngkir = async (req, res) => {
@@ -331,135 +283,56 @@ exports.bayarOngkir = async (req, res) => {
     }
 
     const parsedNominal = parseFloat(nominal);
-
-    // Susun payload JSON untuk API Gateway
-    const gatewayPayload = {
-        order_id: order_id,
-        user_id: user_id,
-        nominal: parsedNominal,
-        source: 'LogistiKita',
-        timestamp: new Date().toISOString()
-    };
-
-    console.log(`\n[Bayar Ongkir] =============================================`);
-    console.log(`[Bayar Ongkir] Order: ${order_id} | User: ${user_id} | Nominal: ${parsedNominal}`);
-    console.log(`[Bayar Ongkir] Payload ke Gateway:`, JSON.stringify(gatewayPayload));
-
-    // -------------------------------------------------------
-    // WAJIB: Kirim payload via POST ke API Gateway/Integrator
-    // Ganti URL di bawah dengan URL API Gateway kelompok lain
-    // -------------------------------------------------------
     const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:4000/api/gateway/payment';
-    
-    let gatewayResponse = null;
-    let useLocalFallback = false;
 
+    // Step 1: Proses pembayaran via Gateway (dengan fallback otomatis)
+    const paymentResult = await paymentGatewayService.processPaymentWithFallback(
+        { order_id, user_id, nominal: parsedNominal },
+        API_GATEWAY_URL
+    );
+
+    if (!paymentResult.success) {
+        return res.status(500).json({ 
+            status: "Error", 
+            message: paymentResult.message || "Pembayaran ditolak oleh SmartBank/Gateway" 
+        });
+    }
+
+    // Step 2: Simpan transaksi ke database
+    const connection = await db.getConnection();
     try {
-        console.log(`[Bayar Ongkir] Mengirim ke API Gateway: ${API_GATEWAY_URL}`);
-        
-        const axios = require('axios');
-        const response = await axios.post(API_GATEWAY_URL, gatewayPayload, {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 10000 // 10 detik timeout
+        await connection.beginTransaction();
+
+        const txResult = await paymentGatewayService.savePaymentTransaction(connection, {
+            order_id, user_id, nominal: parsedNominal,
+            transaction_id: paymentResult.transaction_id
         });
 
-        gatewayResponse = response.data;
-        console.log(`[Bayar Ongkir] Response dari Gateway:`, JSON.stringify(gatewayResponse));
+        await connection.commit();
 
-    } catch (gatewayError) {
-        console.warn(`[Bayar Ongkir] API Gateway tidak tersedia: ${gatewayError.message}`);
-        console.log(`[Bayar Ongkir] Menggunakan fallback SmartBank Service lokal...`);
-        useLocalFallback = true;
-    }
+        console.log(`[Bayar Ongkir] ✅ Pembayaran berhasil disimpan ke database`);
 
-    // Fallback: gunakan SmartBank service lokal jika Gateway tidak tersedia
-    if (useLocalFallback) {
-        try {
-            gatewayResponse = await smartbankService.processPayment(user_id, order_id, parsedNominal);
-            console.log(`[Bayar Ongkir] Fallback SmartBank response:`, JSON.stringify(gatewayResponse));
-        } catch (fallbackError) {
-            console.error(`[Bayar Ongkir] Fallback juga gagal:`, fallbackError.message);
-            return res.status(500).json({ 
-                status: "Error", 
-                message: "Gagal menghubungi API Gateway dan SmartBank Service" 
-            });
-        }
-    }
-
-    // Cek apakah pembayaran berhasil (dari gateway atau fallback)
-    const isSuccess = gatewayResponse && (gatewayResponse.success || gatewayResponse.status === 'Success');
-
-    if (isSuccess) {
-        const transactionId = gatewayResponse.transaction_id || 'TRX-' + Date.now();
-        
-        // Update database: set pembayaran = 'Lunas'
-        const connection = await db.getConnection();
-        try {
-            await connection.beginTransaction();
-            
-            const [orderRows] = await connection.execute(
-                'SELECT * FROM orders WHERE order_id = ? AND user_id = ? FOR UPDATE', 
-                [order_id, user_id]
-            );
-            
-            if (orderRows.length === 0) {
-                throw new Error("Order ID tidak valid atau bukan milik user ini");
+        res.json({
+            status: "Success",
+            message: "Pembayaran via SmartBank Berhasil",
+            transaction_id: paymentResult.transaction_id,
+            gateway_used: paymentResult.gateway_used,
+            data: {
+                order_id, user_id,
+                nominal: parsedNominal,
+                fee_layanan: txResult.feeLayanan,
+                transaction_id: paymentResult.transaction_id
             }
-            if (orderRows[0].pembayaran === 'Lunas') {
-                throw new Error("Order ini sudah dibayar sebelumnya");
-            }
-            
-            // Update status pembayaran
-            await connection.execute(
-                'UPDATE orders SET pembayaran = ?, transaction_id = ? WHERE order_id = ?', 
-                ['Lunas', transactionId, order_id]
-            );
-            
-            // Hitung fee breakdown
-            const ongkirAsli = parsedNominal / 1.03; // Reverse calculate base ongkir
-            const feeLayanan = parsedNominal - ongkirAsli;
-            const feeBank = ongkirAsli * 0.01;
-            
-            // Catat transaksi
-            await connection.execute(
-                'INSERT INTO transactions (transaction_id, order_id, user_id, amount, fee_layanan, fee_bank, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [transactionId, order_id, user_id, ongkirAsli, feeLayanan, feeBank, parsedNominal]
-            );
-            
-            await connection.commit();
-            
-            console.log(`[Bayar Ongkir] ✅ Pembayaran berhasil disimpan ke database`);
-            console.log(`[Bayar Ongkir] =============================================\n`);
-            
-            res.json({
-                status: "Success",
-                message: "Pembayaran via SmartBank Berhasil",
-                transaction_id: transactionId,
-                gateway_used: useLocalFallback ? 'local_smartbank' : 'api_gateway',
-                data: {
-                    order_id,
-                    user_id,
-                    nominal: parsedNominal,
-                    fee_layanan: feeLayanan,
-                    transaction_id: transactionId
-                }
-            });
-        } catch (dbError) {
-            await connection.rollback();
-            console.error(`[Bayar Ongkir] ❌ Database error:`, dbError.message);
-            res.status(500).json({ 
-                status: "Error", 
-                message: dbError.message || "Gagal menyimpan transaksi ke database" 
-            });
-        } finally {
-            connection.release();
-        }
-    } else {
-        console.log(`[Bayar Ongkir] ❌ Pembayaran ditolak oleh gateway/service`);
+        });
+    } catch (dbError) {
+        await connection.rollback();
+        console.error(`[Bayar Ongkir] ❌ Database error:`, dbError.message);
         res.status(500).json({ 
             status: "Error", 
-            message: gatewayResponse?.message || "Pembayaran ditolak oleh SmartBank/Gateway" 
+            message: dbError.message || "Gagal menyimpan transaksi ke database" 
         });
+    } finally {
+        connection.release();
     }
 };
 

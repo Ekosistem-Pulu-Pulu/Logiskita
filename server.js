@@ -180,11 +180,9 @@ app.listen(ports.customer, () => {
     console.log(`========================================`);
     console.log(`  🌐 Customer/Landing : http://localhost:${ports.customer}/`);
 });
-app.listen(ports.admin, () => {
-    console.log(`  👔 Admin Dashboard   : http://localhost:${ports.admin}/admin-login.html`);
-});
+
 app.listen(ports.superadmin, () => {
-    console.log(`  🛡️  Super Admin       : http://localhost:${ports.superadmin}/superadmin-login.html`);
+    console.log(`  🛡️  Admin Dashboard   : http://localhost:${ports.superadmin}/superadmin-login.html`);
 });
 app.listen(ports.operator, () => {
     console.log(`  🏢 Operator Cabang   : http://localhost:${ports.operator}/operator-login.html`);

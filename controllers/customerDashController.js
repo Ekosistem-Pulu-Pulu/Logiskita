@@ -1,6 +1,8 @@
 // Controller: Customer Dashboard
 // Mengelola request khusus customer (history, details, creation, and tracking)
 const db = require('../db');
+const pricingService = require('../services/PricingService');
+const branchLookup = require('../services/BranchLookupService');
 
 // ============================================================
 // GET /customer/shipments - List pengiriman milik customer
@@ -72,12 +74,12 @@ exports.createShipment = async (req, res) => {
         });
     }
 
+    // Cost calculation
+    const pricing = pricingService.hitungOngkirShipment(weight, service_type);
     const parsedWeight = parseFloat(weight) || 1.0;
-    const selectedService = service_type === 'Express' ? 'Express' : 'Reguler';
-    
-    // Cost calculation (simulate tarif)
-    const tarifPerKg = selectedService === 'Express' ? 25000 : 15000;
-    const ongkir = parsedWeight * tarifPerKg;
+    const selectedService = pricing.selectedService;
+    const ongkir = pricing.ongkir;
+    // For customer, they use a flat fee in the legacy code:
     const biayaLayanan = 2000; // Flat customer fee
     const totalBiaya = ongkir + biayaLayanan;
 
@@ -88,21 +90,12 @@ exports.createShipment = async (req, res) => {
         await connection.beginTransaction();
 
         // Find Origin and Destination Branches
-        let originBranchId = null;
-        let destBranchId = null;
-        
-        if (sender_city) {
-            const [b1] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${sender_city}%`]);
-            if (b1.length > 0) originBranchId = b1[0].id;
-        }
-        if (receiver_city) {
-            const [b2] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${receiver_city}%`]);
-            if (b2.length > 0) destBranchId = b2[0].id;
-        }
-
-        // Default fallback to branch 1/2 if null
-        if (!originBranchId) originBranchId = 1;
-        if (!destBranchId) destBranchId = 2;
+        const branches = await branchLookup.resolveBranches({
+            senderCity: sender_city,
+            receiverCity: receiver_city
+        }, connection);
+        let originBranchId = branches.originBranchId;
+        let destBranchId = branches.destBranchId;
 
         // Insert shipment
         await connection.execute(

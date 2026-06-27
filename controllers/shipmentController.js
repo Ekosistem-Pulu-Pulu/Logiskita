@@ -1,6 +1,8 @@
 // Controller: Shipment API (Diakses oleh Mitra Bisnis via API Key)
 const db = require('../db');
 const smartbankService = require('../services/smartbankService');
+const pricingService = require('../services/PricingService');
+const branchLookup = require('../services/BranchLookupService');
 
 // ============================================================
 // POST /api/v1/shipments - Buat Pengiriman Baru (oleh Mitra)
@@ -22,14 +24,13 @@ exports.createShipment = async (req, res) => {
         });
     }
 
-    const parsedWeight = parseFloat(weight) || 1;
-    const selectedService = service_type === 'Express' ? 'Express' : 'Reguler';
-
-    // Hitung ongkir (tarif dasar per kg)
-    const tarifPerKg = selectedService === 'Express' ? 25000 : 15000;
-    const ongkir = parsedWeight * tarifPerKg;
-    const biayaLayanan = ongkir * 0.05; // Fee layanan 5%
-    const totalBiaya = ongkir + biayaLayanan;
+    // Hitung ongkir
+    const pricing = pricingService.hitungOngkirShipment(weight, service_type);
+    const parsedWeight = parseFloat(weight) || 1.0;
+    const selectedService = pricing.selectedService;
+    const ongkir = pricing.ongkir;
+    const biayaLayanan = pricing.biayaLayanan;
+    const totalBiaya = pricing.totalBiaya;
 
     // 1. Hit API SmartBank untuk potong saldo dari rekening mitra
     const bankResponse = await smartbankService.processPayment(
@@ -54,16 +55,12 @@ exports.createShipment = async (req, res) => {
         await connection.beginTransaction();
 
         // Cari Origin dan Destination Branch berdasarkan kota
-        let originBranchId = null;
-        let destBranchId = null;
-        if (sender_city) {
-            const [b1] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${sender_city}%`]);
-            if (b1.length > 0) originBranchId = b1[0].id;
-        }
-        if (receiver_city) {
-            const [b2] = await connection.execute('SELECT id FROM branches WHERE city LIKE ? LIMIT 1', [`%${receiver_city}%`]);
-            if (b2.length > 0) destBranchId = b2[0].id;
-        }
+        const branches = await branchLookup.resolveBranches({
+            senderCity: sender_city,
+            receiverCity: receiver_city
+        }, connection);
+        let originBranchId = branches.originBranchId;
+        let destBranchId = branches.destBranchId;
 
         // 3. Insert shipment ke database
         await connection.execute(
@@ -205,16 +202,16 @@ exports.checkRates = async (req, res) => {
 
         if (rows.length === 0) {
             // Fallback: tarif default jika rute tidak ditemukan di tabel
-            const defaultReguler = parsedWeight * 15000;
-            const defaultExpress = parsedWeight * 25000;
+            const reguler = pricingService.hitungOngkirShipment(parsedWeight, 'Reguler');
+            const express = pricingService.hitungOngkirShipment(parsedWeight, 'Express');
             return res.json({
                 status: 'Success',
                 message: 'Rute tidak ditemukan di database, menggunakan tarif default',
                 data: {
                     kota_asal, kota_tujuan, weight: parsedWeight,
                     options: [
-                        { service: 'Reguler', harga: defaultReguler, estimasi: '3-5 Hari' },
-                        { service: 'Express', harga: defaultExpress, estimasi: '1-2 Hari' }
+                        { service: 'Reguler', harga: reguler.ongkir, estimasi: '3-5 Hari' },
+                        { service: 'Express', harga: express.ongkir, estimasi: '1-2 Hari' }
                     ]
                 }
             });

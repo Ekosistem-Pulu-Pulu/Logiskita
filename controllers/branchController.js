@@ -5,6 +5,8 @@
 
 const db = require('../db');
 const transitService = require('../services/transitService');
+const courierAssignmentService = require('../services/CourierAssignmentService');
+const shipmentPresenter = require('../services/ShipmentPresenter');
 
 // ============================================================
 // GET /internal/branches/dashboard - Statistik Cabang
@@ -206,46 +208,14 @@ exports.confirmReceivePackage = async (req, res) => {
             );
         }
 
-        // Determine if this is the final destination branch
-        const finalBranch = ship.final_branch_id || ship.destination_branch_id;
-        const isDestinationBranch = finalBranch === branchId;
-        let newStatus, description, assignedKurir = null;
-        let nextBranchId = branchId;
+        // Delegasi penentuan status dan kurir ke CourierAssignmentService
+        const receiveResult = await courierAssignmentService.determineReceiveAction(
+            ship, branchId, transitService, connection
+        );
 
-        if (isDestinationBranch) {
-            // Paket sudah sampai di cabang tujuan akhir
-            newStatus = 'Arrived at Destination Branch';
-            description = 'Paket tiba di cabang tujuan akhir. Siap untuk delivery ke penerima.';
-            
-            // Auto-assign ke kurir cabang tujuan (round-robin)
-            const [availableKurir] = await connection.execute(
-                `SELECT iu.id, iu.nama, 
-                    (SELECT COUNT(*) FROM shipments s2 WHERE s2.assigned_kurir_id = iu.id AND s2.status IN ('Out For Delivery','Picked Up','In Transit','Arrived at Destination Branch','Arrived at Branch')) as active_count
-                 FROM internal_users iu 	
-                 WHERE iu.branch_id = ? AND iu.role = 'Kurir' AND iu.is_active = 1 AND iu.approval_status = 'approved'
-                 ORDER BY active_count ASC, iu.id ASC LIMIT 1`,
-                [branchId]
-            );
+        const { newStatus, description, assignedKurir, nextBranchId, isDestinationBranch } = receiveResult;
 
-            if (availableKurir.length > 0) {
-                assignedKurir = availableKurir[0].id;
-                description += ` Auto-assign ke kurir: ${availableKurir[0].nama}`;
-            }
-        } else {
-            // Paket tiba di cabang transit (bukan tujuan akhir)
-            newStatus = 'Arrived at Branch';
-            description = 'Paket tiba di cabang transit. Menunggu diteruskan ke cabang berikutnya.';
-            
-            // Get next leg destination to update destination_branch_id
-            const nextLeg = await transitService.getNextLeg(ship.id);
-            if (nextLeg) {
-                nextBranchId = nextLeg.to_branch_id;
-            } else {
-                nextBranchId = finalBranch;
-            }
-        }
-
-        // Update shipment (releasing dispatcher/transit courier if transit, or assigning new courier if final)
+        // Update shipment
         await connection.execute(
             'UPDATE shipments SET status = ?, current_branch_id = ?, destination_branch_id = ?, assigned_kurir_id = ? WHERE awb_number = ?',
             [newStatus, branchId, nextBranchId, assignedKurir, awb_number]
@@ -633,35 +603,21 @@ exports.lookupResi = async (req, res) => {
             [ship.awb_number]
         );
 
-        // 6. Determine allowed actions based on status + branch position
-        const allowed_actions = [];
+        // 6. Determine allowed actions via ShipmentPresenter
+        const finalBranch = ship.final_branch_id || ship.destination_branch_id;
         const isFinalDestination = finalBranch === branchId;
         const isOriginBranch = ship.origin_branch_id === branchId;
         const isCurrentBranch = ship.current_branch_id === branchId;
 
-        if (ship.status === 'Pending' && isOriginBranch) {
-            allowed_actions.push({ action: 'pickup', label: 'Pickup dari Pengirim', icon: 'fa-hand-holding-box', color: '#06b6d4' });
-        }
+        const branchContext = {
+            is_origin: isOriginBranch,
+            is_current: isCurrentBranch,
+            is_final_destination: isFinalDestination,
+            branchId: branchId,
+            isOriginBranch, isCurrentBranch, isFinalDestination
+        };
 
-        if (ship.status === 'Picked Up' && isCurrentBranch) {
-            allowed_actions.push({ action: 'arrived_origin', label: 'Paket Diterima di Gudang', icon: 'fa-warehouse', color: '#3b82f6' });
-        }
-
-        if (ship.status === 'Waiting Branch Confirmation' && ship.destination_branch_id === branchId) {
-            allowed_actions.push({ action: 'confirm_receive', label: 'Konfirmasi Terima di Cabang', icon: 'fa-clipboard-check', color: '#10b981' });
-        }
-
-        if (ship.status === 'Arrived at Branch' && isCurrentBranch && !isFinalDestination) {
-            allowed_actions.push({ action: 'send_transit', label: 'Kirim Transit ke Cabang Berikutnya', icon: 'fa-truck-fast', color: '#3b82f6' });
-        }
-
-        if (ship.status === 'Arrived at Destination Branch' && isCurrentBranch && isFinalDestination) {
-            allowed_actions.push({ action: 'out_for_delivery', label: 'Assign & Kirim via Kurir', icon: 'fa-motorcycle', color: '#8b5cf6' });
-        }
-
-        if ((ship.status === 'Arrived at Branch' || ship.status === 'Arrived at Destination Branch') && isCurrentBranch) {
-            allowed_actions.push({ action: 'manual_status', label: 'Update Status Manual', icon: 'fa-pen-to-square', color: '#f59e0b' });
-        }
+        const allowed_actions = shipmentPresenter.resolveAllowedActions(ship, branchContext);
 
         // 7. Get available couriers for this branch (needed for assign)
         const [couriers] = await db.execute(
@@ -680,45 +636,16 @@ exports.lookupResi = async (req, res) => {
             if (nbRows.length > 0) nextBranchInfo = nbRows[0];
         }
 
+        // 9. Format response via ShipmentPresenter
+        const responseData = shipmentPresenter.formatLookupResponse(ship, {
+            transitLegs, trackingLogs, couriers, nextBranchInfo,
+            branchContext,
+            allowedActions: allowed_actions
+        });
+
         res.json({
             status: 'Success',
-            data: {
-                shipment: {
-                    id: ship.id,
-                    awb_number: ship.awb_number,
-                    sender_name: ship.sender_name,
-                    sender_phone: ship.sender_phone,
-                    sender_city: ship.sender_city,
-                    receiver_name: ship.receiver_name,
-                    receiver_phone: ship.receiver_phone,
-                    receiver_address: ship.receiver_address,
-                    receiver_city: ship.receiver_city,
-                    weight: ship.weight,
-                    service_type: ship.service_type,
-                    status: ship.status,
-                    payment_status: ship.payment_status,
-                    total_cost: ship.total_cost,
-                    order_source: ship.order_source,
-                    partner_name: ship.nama_mitra,
-                    created_at: ship.created_at,
-                    updated_at: ship.updated_at,
-                    origin_branch: { id: ship.origin_branch_id, name: ship.origin_branch_name, city: ship.origin_city },
-                    destination_branch: { id: ship.destination_branch_id, name: ship.dest_branch_name, city: ship.dest_city },
-                    current_branch: { id: ship.current_branch_id, name: ship.current_branch_name, city: ship.current_city },
-                    final_branch: { id: ship.final_branch_id, name: ship.final_branch_name, city: ship.final_city },
-                    next_branch: nextBranchInfo,
-                    kurir: ship.kurir_nama ? { name: ship.kurir_nama, phone: ship.kurir_phone } : null
-                },
-                transit_legs: transitLegs,
-                tracking_history: trackingLogs,
-                allowed_actions: allowed_actions,
-                available_couriers: couriers,
-                branch_context: {
-                    is_origin: isOriginBranch,
-                    is_current: isCurrentBranch,
-                    is_final_destination: isFinalDestination
-                }
-            }
+            data: responseData
         });
     } catch (error) {
         console.error('[Lookup Resi Error]', error);
