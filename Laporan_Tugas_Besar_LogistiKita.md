@@ -215,3 +215,121 @@ Tabel validasi digunakan untuk membuktikan sistem telah memenuhi fungsi utamanya
 | Terjadi race condition akibat tabrakan eksekusi dua webhook pembayaran pada waktu bersamaan. | Menerapkan Transaction Logic (`BEGIN`/`COMMIT`) di dalam driver `mysql2` untuk mengunci modifikasi row pada level query DB. |
 | Ketidakseragaman payload antar aplikasi mengakibatkan malfungsi sinkronisasi data API Gateway. | Menerbitkan dokumen Standarisasi Kontrak API (API Contract Blueprint) menggunakan konvensi kembalian JSON baku (status, message, data). |
 | Respon perbankan berpotensi timeout yang menimbulkan error `Uncaught Promise Rejection` pada Server JS LogistiKita. | Menyematkan blok perintah `try`/`catch` pada seluruh implementasi Axios dengan batas toleransi putus koneksi (*timeout setting*). Ditambah skenario mekanisme isolasi Fallback Simulator. |
+
+---
+
+## 12. DOKUMENTASI ALUR PENGGUNAAN & TESTING ENDPOINT
+
+### 12.1 Alur Operasional Sistem Pengiriman Paket Antar Cabang
+Sistem aplikasi **LogistiKita** dirancang dengan alur pengiriman yang realistis, di mana setiap paket akan melewati proses estafet antar cabang (transit) sebelum sampai ke tangan penerima. Rincian alur operasionalnya adalah sebagai berikut:
+
+1. **Pembuatan Pesanan dan Pembayaran (Customer)**:
+   * Customer melakukan pembuatan pengiriman (*shipment*) beserta pembayaran ongkos kirim melalui aplikasi.
+   * Setelah pembayaran berhasil dikonfirmasi oleh sistem, data pesanan akan otomatis terbuat.
+   * Status awal pengiriman berubah menjadi **"Pending Pickup"** (Menunggu Penjemputan).
+2. **Proses Penjemputan Paket (Kurir Asal)**:
+   * Tugas penjemputan (*pickup*) akan otomatis muncul pada dashboard Kurir Lapangan yang terdaftar secara spesifik di Cabang Asal tempat pengirim berada.
+   * Kurir menjemput paket dari pengirim dan membawanya ke kantor Cabang Asal.
+3. **Proses Serah Terima di Cabang (Operator Cabang & Kurir)**:
+   * Sesampainya di cabang, Kurir akan mengajukan permintaan konfirmasi serah terima paket kepada Operator Cabang.
+   * Operator Cabang bertugas melakukan pengecekan fisik paket. Jika paket sesuai, Operator Cabang akan memperbarui (*update*) status paket ke dalam sistem bahwa paket telah **"Tiba di Cabang"**.
+4. **Rantai Pengiriman Antar Cabang (Transit / Routing)**:
+   * Sistem akan melacak pergerakan paket secara *live tracking* dari satu cabang ke cabang lainnya secara berurutan sesuai dengan rute geografis dunia nyata.
+   * *Contoh Kasus*: Jika paket dikirim dari Jakarta menuju Yogyakarta, maka paket tidak langsung "lompat", melainkan ditransitkan terlebih dahulu melalui cabang perantara (misalnya: **Cabang Jakarta ➔ Transit Cabang Bandung ➔ Tiba di Cabang Yogyakarta**).
+   * Pada setiap titik transit (cabang), Operator Cabang di lokasi tersebut wajib mengonfirmasi kedatangan dan keberangkatan paket, sehingga *live tracking* selalu akurat.
+5. **Pengiriman Tahap Akhir (Last-Mile Delivery)**:
+   * Setelah paket tiba di Cabang Tujuan (cabang terdekat dengan alamat penerima), tugas pengantaran akan otomatis ditugaskan kepada Kurir Lapangan yang bertugas di cabang tersebut.
+   * Kurir membawa paket ke alamat tujuan.
+   * Setelah paket diterima oleh customer, kurir akan melakukan konfirmasi akhir beserta bukti terima, dan status pengiriman akan berubah menjadi **"Delivered"** (Selesai).
+6. **Manajemen Kurir dan Penempatan Cabang**:
+   * Setiap cabang memiliki daftar kurir yang ditugaskan secara eksklusif untuk cabang tersebut.
+   * Terdapat fitur Registrasi Kurir di mana calon kurir dapat mendaftarkan diri dan menetapkan lokasi Cabang tempat mereka akan bertugas (misalnya mendaftar khusus untuk Cabang Jakarta Pusat).
+   * Sistem hanya akan mendistribusikan tugas penjemputan maupun pengantaran kepada kurir yang domisili cabangnya sesuai dengan lokasi tugas tersebut.
+
+---
+
+### 12.2 Akun Pengguna Terdaftar dalam Sistem
+Superadmin, admin, kurir, dan operator cabang masuk ke dalam sistem menggunakan email dan password yang terdaftar pada database. 
+*(Catatan: Pengguna retail dapat membuat pengiriman tanpa harus mendaftar akun).*
+
+#### A. Super Admin / Admin Pusat
+* **Super Admin Utama**
+  * Email: `superadmin@logistikita.com`
+  * Password: `superadmin123`
+* **Admin Operasional**
+  * Email: `admin@logistikita.com`
+  * Password: `admin123`
+
+#### B. Operator Cabang
+Seluruh akun operator memiliki password default: `operator123`
+
+| Cabang | Email |
+| :--- | :--- |
+| **Jakarta** | `op_jakarta@logistikita.com` |
+| **Bandung** | `op_bandung@logistikita.com` |
+| **Surabaya** | `op_surabaya@logistikita.com` |
+| **Medan** | `op_medan@logistikita.com` |
+| **Makassar** | `op_makassar@logistikita.com` |
+| **Balikpapan** | `op_balikpapan@logistikita.com` |
+| **Yogyakarta** | `op_yogyakarta@logistikita.com` |
+| **Semarang** | `op_semarang@logistikita.com` |
+| **Denpasar** | `op_denpasar@logistikita.com` |
+| **Palembang** | `op_palembang@logistikita.com` |
+| **Pontianak** | `op_pontianak@logistikita.com` |
+| **Manado** | `op_manado@logistikita.com` |
+
+#### C. Kurir Lapangan
+Seluruh akun kurir memiliki password default: `kurir123`
+
+| Nama Kurir | Email | Cabang Penugasan |
+| :--- | :--- | :--- |
+| **Andi** | `andi.kurir@logistikita.com` | Cabang Jakarta |
+| **Budi** | `budi.kurir@logistikita.com` | Cabang Jakarta |
+| **Citra** | `citra.kurir@logistikita.com` | Cabang Bandung |
+| **Doni** | `doni.kurir@logistikita.com` | Cabang Bandung |
+| **Eka** | `eka.kurir@logistikita.com` | Cabang Surabaya |
+
+---
+
+### 12.3 Hasil Testing & Dokumentasi Endpoint API
+
+Berikut adalah rincian fitur operasional beserta endpoint API-nya dan dokumentasi hasil testing yang berhasil dilakukan:
+
+#### 1. Dashboard
+* **Fungsi**: Menampilkan ringkasan total pengiriman, memonitor status barang terbaru, serta notifikasi sistem.
+
+#### 2. Manajemen Pengiriman (Pembuatan Paket)
+* **Fungsi**: Membuat pengiriman baru, mengisi data pengirim, penerima, serta detail barang (berat, layanan pengiriman).
+* **Endpoint**:
+  * **Customer**: `POST /api/v1/customer/shipments`
+  * **B2B Mitra**: `POST /api/v1/shipments`
+* **Hasil Pengujian**:
+  * **Testing Endpoint Customer Shipments (Berhasil)**:
+    ![Testing Endpoint Customer Shipments](assets/endpoint_img_p5_1.png)
+  * **Penggunaan Headers API Key untuk Mitra Bisnis (B2B)**:
+    ![Headers API Key B2B](assets/endpoint_img_p5_2.png)
+  * **Testing Endpoint B2B Shipments (Berhasil)**:
+    ![Testing Endpoint B2B Shipments](assets/endpoint_img_p6_1.png)
+
+#### 3. Pembayaran
+* **Fungsi**: Menghitung biaya pengiriman + biaya layanan secara otomatis, memproses simulasi pembayaran, dan memverifikasi status pembayaran menjadi "Paid" (Lunas).
+* **Endpoint**: `POST /api/v1/payments/pay`
+
+#### 4. Proses Pengiriman
+* **Fungsi**: Memproses barang oleh kurir/cabang, memperbarui pergerakan transit, dan mengirimkannya ke cabang tujuan.
+* **Endpoint**: `POST /api/v1/webhook/status-update`
+
+#### 5. Pelacakan (Tracking)
+* **Fungsi**: Memasukkan nomor resi (AWB) untuk menampilkan riwayat pergerakan status dan lokasi barang secara real-time.
+* **Hasil Pengujian**:
+    ![Testing Tracking Endpoint](assets/endpoint_img_p7_1.png)
+
+#### 6. Riwayat Pengiriman
+* **Fungsi**: Menarik riwayat resi pengguna/mitra untuk menampilkan daftar semua transaksi, tarif, dan status pengiriman akhir.
+* **Endpoint**: `GET /api/v1/shipments`
+* **Hasil Pengujian**:
+    ![Testing Get Shipments History Endpoint](assets/endpoint_img_p7_2.png)
+
+#### 7. Profil Pengguna
+* **Fungsi**: Memperbarui data akun pribadi pengguna atau mengubah password.
+* **Endpoint**: `PUT /api/v1/users/profile`
