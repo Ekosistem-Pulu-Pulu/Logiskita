@@ -30,7 +30,7 @@ exports.login = async (req, res) => {
         let redirectUrl = '/';
         switch (user.role) {
             case 'Superadmin': redirectUrl = '/superadmin.html'; break;
-            case 'Admin': redirectUrl = '/admin.html'; break;
+            case 'Admin': redirectUrl = '/superadmin.html'; break;
             case 'Branch Admin': redirectUrl = '/branch-dashboard.html'; break;
             case 'Dispatcher': redirectUrl = '/dispatcher-dashboard.html'; break;
             case 'Kurir': redirectUrl = '/kurir.html'; break;
