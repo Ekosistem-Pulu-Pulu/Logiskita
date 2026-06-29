@@ -276,7 +276,7 @@ function showAlert(message, type) {
 function redirectByRole(role) {
     switch (role) {
         case 'Superadmin': window.location.href = '/superadmin.html'; break;
-        case 'Admin': window.location.href = '/admin.html'; break;
+        case 'Admin': window.location.href = '/superadmin.html'; break;
         case 'Branch Admin': window.location.href = '/branch-dashboard.html'; break;
         case 'Dispatcher': window.location.href = '/dispatcher-dashboard.html'; break;
         case 'Kurir': window.location.href = '/kurir.html'; break;
