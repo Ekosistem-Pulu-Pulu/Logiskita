@@ -604,7 +604,7 @@ exports.lookupResi = async (req, res) => {
         );
 
         // 6. Determine allowed actions via ShipmentPresenter
-        const finalBranch = ship.final_branch_id || ship.destination_branch_id;
+
         const isFinalDestination = finalBranch === branchId;
         const isOriginBranch = ship.origin_branch_id === branchId;
         const isCurrentBranch = ship.current_branch_id === branchId;
